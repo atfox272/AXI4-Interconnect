@@ -118,7 +118,7 @@ module sa_WDATA_channel
         .OUTPUT_W(MST_ID_W)
     ) master_id_encoder (
         .i(arb_grant_valid),
-        .o(granted_mst_id)
+        .o(Ax_mst_id_valid)
     );
     edgedet #(
         .RISING_EDGE(1'b1)

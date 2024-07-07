@@ -218,6 +218,7 @@ module sa_xADDR_channel
     assign AxVALID_o_nxt = arb_req_remain;
     
     assign xDATA_AxID_o = s_AxID_o;
+    assign xDATA_mst_id_o = xDATA_AxID_o[TRANS_SLV_ID_W-1-:MST_ID_W];
     assign xDATA_crossing_flag_o = msk_addr_crossing_flag[granted_mst_id];
     assign xDATA_AxLEN_o = s_AxLEN_o;
     assign xDATA_fifo_order_wr_en_o = x_channel_shift_en;

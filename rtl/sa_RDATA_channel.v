@@ -107,7 +107,7 @@ module sa_RDATA_channel
     generate
         for(mst_idx = 0; mst_idx < MST_AMT; mst_idx = mst_idx + 1) begin
             assign dsp_RVALID_o[mst_idx] = (mst_id == mst_idx) & s_RVALID_i;
-            assign dsp_RID_o[TRANS_SLV_ID_W*(mst_idx+1)-1-:TRANS_SLV_ID_W] = s_RID_i;
+            assign dsp_RID_o[TRANS_MST_ID_W*(mst_idx+1)-1-:TRANS_MST_ID_W] = s_RID_i[TRANS_MST_ID_W-1:0];
             assign dsp_RDATA_o[DATA_WIDTH*(mst_idx+1)-1-:DATA_WIDTH] = s_RDATA_i;
             assign dsp_RLAST_o[mst_idx] = filter_RLAST;
         end

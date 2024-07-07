@@ -29,7 +29,7 @@ module sa_WRESP_channel
     // Output declaration
     // -- To Dispatcher
     // ---- Write response channel (master)
-    output  [TRANS_SLV_ID_W*MST_AMT-1:0]    dsp_BID_o,
+    output  [TRANS_MST_ID_W*MST_AMT-1:0]    dsp_BID_o,
     output  [TRANS_WR_RESP_W*MST_AMT-1:0]   dsp_BRESP_o,
     output  [MST_AMT-1:0]                   dsp_BVALID_o,
     // -- To slave (master interface of the interconnect)
@@ -105,7 +105,7 @@ module sa_WRESP_channel
     generate
         for(mst_idx = 0; mst_idx < MST_AMT; mst_idx = mst_idx + 1) begin
             assign dsp_BVALID_o[mst_idx] = (mst_id == mst_idx) & filter_BVALID;
-            assign dsp_BID_o[TRANS_SLV_ID_W*(mst_idx+1)-1-:TRANS_SLV_ID_W] = s_BID_i;
+            assign dsp_BID_o[TRANS_MST_ID_W*(mst_idx+1)-1-:TRANS_MST_ID_W] = s_BID_i[TRANS_MST_ID_W-1:0];
             assign dsp_BRESP_o[TRANS_WR_RESP_W*(mst_idx+1)-1-:TRANS_WR_RESP_W] = s_BRESP_i;
         end
     endgenerate
