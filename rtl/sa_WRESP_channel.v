@@ -5,12 +5,8 @@ module sa_WRESP_channel
     parameter OUTSTANDING_AMT   = 8,
     parameter MST_ID_W          = $clog2(MST_AMT),
     // Transaction configuration
-    parameter DATA_WIDTH        = 32,
-    parameter ADDR_WIDTH        = 32,
     parameter TRANS_MST_ID_W    = 5,                                // Width of master transaction ID 
     parameter TRANS_SLV_ID_W    = TRANS_MST_ID_W + $clog2(MST_AMT), // Width of slave transaction ID
-    parameter TRANS_DATA_LEN_W  = 3,    // Bus width of xLEN
-    parameter TRANS_DATA_SIZE_W = 3,    // Bus width of xSIZE
     parameter TRANS_WR_RESP_W   = 2
 )
 (
@@ -33,7 +29,7 @@ module sa_WRESP_channel
     // Output declaration
     // -- To Dispatcher
     // ---- Write response channel (master)
-    output  [TRANS_MST_ID_W*MST_AMT-1:0]    dsp_BID_o,
+    output  [TRANS_SLV_ID_W*MST_AMT-1:0]    dsp_BID_o,
     output  [TRANS_WR_RESP_W*MST_AMT-1:0]   dsp_BRESP_o,
     output  [MST_AMT-1:0]                   dsp_BVALID_o,
     // -- To slave (master interface of the interconnect)
@@ -107,7 +103,7 @@ module sa_WRESP_channel
     // -- Dispatcher Output
     assign dsp_BREADY_valid = dsp_BREADY_i[mst_id];
     generate
-        for(mst_idx = mst_idx; mst_idx < MST_AMT; mst_idx = mst_idx + 1) begin
+        for(mst_idx = 0; mst_idx < MST_AMT; mst_idx = mst_idx + 1) begin
             assign dsp_BVALID_o[mst_idx] = (mst_id == mst_idx) & filter_BVALID;
             assign dsp_BID_o[TRANS_SLV_ID_W*(mst_idx+1)-1-:TRANS_SLV_ID_W] = s_BID_i;
             assign dsp_BRESP_o[TRANS_WR_RESP_W*(mst_idx+1)-1-:TRANS_WR_RESP_W] = s_BRESP_i;
