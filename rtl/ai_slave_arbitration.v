@@ -249,7 +249,7 @@ module ai_slave_arbitration
         // Input
         .ACLK_i(ACLK_i),
         .ARESETn_i(ARESETn_i),
-        .xDATA_stall_i(),
+        .xDATA_stall_i(AR_stall),
         .dsp_AxID_i(dsp_ARID_i),
         .dsp_AxADDR_i(dsp_ARADDR_i),
         .dsp_AxBURST_i(dsp_ARBURST_i),
