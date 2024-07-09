@@ -78,6 +78,7 @@ module sa_xADDR_channel
     wire                            dsp_AxVALID_dec         [MST_AMT-1:0];  // decoded AxVALID
     wire                            slv_addr_decoder        [MST_AMT-1:0];
     wire                            msk_addr_crossing_flag  [MST_AMT-1:0];
+    wire                            msk_addr_crossing_valid [MST_AMT-1:0];
     wire                            msk_split_addr_sel_nxt  [MST_AMT-1:0];
     wire                            msk_split_addr_sel_en   [MST_AMT-1:0];
     wire                            rd_addr_info            [MST_AMT-1:0];
@@ -192,6 +193,7 @@ module sa_xADDR_channel
         assign fifo_addr_info_rd_en[mst_idx] = rd_addr_info[mst_idx] & (~msk_addr_crossing_flag[mst_idx] | msk_split_addr_sel[mst_idx]);
         assign msk_split_addr_sel_nxt[mst_idx] = ~msk_split_addr_sel[mst_idx];
         assign msk_split_addr_sel_en[mst_idx] = rd_addr_info[mst_idx] & msk_addr_crossing_flag[mst_idx];
+        assign msk_addr_crossing_valid[mst_idx] = (~msk_split_addr_sel[mst_idx]) & msk_addr_crossing_flag[mst_idx];
         // Arbiter        
         assign arb_req[mst_idx] = ~fifo_addr_info_empt[mst_idx];
     end
@@ -217,11 +219,11 @@ module sa_xADDR_channel
     assign AxSIZE_o_nxt = AxSIZE_valid[granted_mst_id];
     assign AxVALID_o_nxt = arb_req_remain;
     
-    assign xDATA_AxID_o = s_AxID_o;
-    assign xDATA_mst_id_o = xDATA_AxID_o[TRANS_SLV_ID_W-1-:MST_ID_W];
-    assign xDATA_crossing_flag_o = msk_addr_crossing_flag[granted_mst_id];
-    assign xDATA_AxLEN_o = s_AxLEN_o;
-    assign xDATA_fifo_order_wr_en_o = x_channel_shift_en;
+    assign xDATA_AxID_o = AxID_o_nxt;
+    assign xDATA_mst_id_o = AxID_o_nxt[TRANS_SLV_ID_W-1-:MST_ID_W];
+    assign xDATA_crossing_flag_o = msk_addr_crossing_valid[granted_mst_id];
+    assign xDATA_AxLEN_o = AxLEN_o_nxt;
+    assign xDATA_fifo_order_wr_en_o = x_channel_shift_en & arb_req_remain;
     // Flip-flop logic
     generate
     // -- ADDR mask controller

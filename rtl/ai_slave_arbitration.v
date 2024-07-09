@@ -1,9 +1,9 @@
 module ai_slave_arbitration
 #(
     // Interconnect configuration
-    parameter                       MST_AMT             = 3,
+    parameter                       MST_AMT             = 4,
     parameter                       OUTSTANDING_AMT     = 8,
-    parameter [0:(MST_AMT*32)-1]    MST_WEIGHT          = {32'd5, 32'd3, 32'd2},
+    parameter [0:(MST_AMT*32)-1]    MST_WEIGHT          = {32'd5, 32'd3, 32'd2, 32'd1},
     parameter                       MST_ID_W            = $clog2(MST_AMT),
     // Transaction configuration
     parameter                       DATA_WIDTH          = 32,

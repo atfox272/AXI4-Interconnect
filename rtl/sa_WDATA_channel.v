@@ -113,13 +113,13 @@ module sa_WDATA_channel
         .almost_full_o(),
         .rst_n(ARESETn_i)
     );
-    onehot_encoder #(
-        .INPUT_W(MST_AMT),
-        .OUTPUT_W(MST_ID_W)
-    ) master_id_encoder (
-        .i(arb_grant_valid),
-        .o(Ax_mst_id_valid)
-    );
+//    onehot_encoder #(
+//        .INPUT_W(MST_AMT),
+//        .OUTPUT_W(MST_ID_W)
+//    ) master_id_encoder (
+//        .i(Ax_mst_id_valid),
+//        .o(Ax_mst_id_valid)
+//    );
     edgedet #(
         .RISING_EDGE(1'b1)
     )transaction_booter(
