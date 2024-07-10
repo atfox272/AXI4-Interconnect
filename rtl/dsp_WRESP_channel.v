@@ -51,22 +51,25 @@ module dsp_WRESP_channel
     
     // Internal signal declaration
     // -- Slave order FIFO
-    wire    [SLV_INFO_W-1:0]    slv_info;
-    wire    [SLV_INFO_W-1:0]    slv_info_valid;
-    wire                        fifo_slv_ord_wr_en;
-    wire                        fifo_slv_ord_rd_en;
-    wire                        fifo_slv_ord_empty;
-    wire                        fifo_slv_ord_full;
-    // -- WRESP FIFO
-    wire    [RESP_INFO_W-1:0]   resp_info           [SLV_AMT-1:0];
-    wire    [RESP_INFO_W-1:0]   resp_info_valid     [SLV_AMT-1:0];
-    wire                        fifo_wresp_wr_en    [SLV_AMT-1:0];
-    wire                        fifo_wresp_rd_en    [SLV_AMT-1:0];
-    wire                        fifo_wresp_empty    [SLV_AMT-1:0];
-    wire                        fifo_wresp_full     [SLV_AMT-1:0];
+    wire    [SLV_INFO_W-1:0]        slv_info;
+    wire    [SLV_INFO_W-1:0]        slv_info_valid;
+    wire                            fifo_slv_ord_wr_en;
+    wire                            fifo_slv_ord_rd_en;
+    wire                            fifo_slv_ord_empty;
+    wire                            fifo_slv_ord_full;
+    // -- Slave resp FIFO
+    wire    [RESP_INFO_W-1:0]       resp_info           [SLV_AMT-1:0];
+    wire    [RESP_INFO_W-1:0]       resp_info_valid     [SLV_AMT-1:0];
+    wire                            fifo_wresp_wr_en    [SLV_AMT-1:0];
+    wire                            fifo_wresp_rd_en    [SLV_AMT-1:0];
+    wire                            fifo_wresp_empty    [SLV_AMT-1:0];
+    wire                            fifo_wresp_full     [SLV_AMT-1:0];
     // -- Handshake detector
-    wire                        sa_handshake_occur  [SLV_AMT-1:0];
-    wire                        m_handshake_occur;
+    wire                            sa_handshake_occur  [SLV_AMT-1:0];
+    wire                            m_handshake_occur;
+    // -- Misc
+    wire    [TRANS_MST_ID_W-1:0]    sa_BID_valid        [SLV_AMT-1:0];
+    wire    [TRANS_WR_RESP_W-1:0]   sa_BRESP_valid      [SLV_AMT-1:0];
     // Module
     // -- Slave order FIFO
     fifo #(
@@ -108,5 +111,31 @@ module dsp_WRESP_channel
     // Combinational logic
     // -- Slave order FIFO
     assign fifo_slv_ord_wr_en = dsp_AW_shift_en_i;
-    
+    assign fifo_slv_ord_rd_en = m_handshake_occur;
+    // -- Slave resp FIFO
+    generate
+        for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin
+            assign resp_info[slv_idx] = {sa_BID_i[TRANS_MST_ID_W*(slv_idx+1)-1-:TRANS_MST_ID_W], sa_BRESP_i[TRANS_WR_RESP_W*(slv_idx+1)-1-:TRANS_WR_RESP_W]};
+            assign {sa_BID_valid[slv_idx], sa_BRESP_valid[slv_idx]} = resp_info_valid[slv_idx];
+            assign fifo_wresp_wr_en[slv_idx] = sa_handshake_occur[slv_idx];
+            assign fifo_wresp_rd_en[slv_idx] = m_handshake_occur & (slv_info_valid == slv_idx);
+        end
+    endgenerate
+    // -- Handshake detector
+    assign m_handshake_occur = m_BVALID_o & m_BREADY_i;
+    generate
+        for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin
+            assign sa_handshake_occur[slv_idx] = sa_BVALID_i[slv_idx] & sa_BREADY_o[slv_idx];
+        end
+    endgenerate
+    // -- Output to Master
+    assign m_BID_o = sa_BID_valid[slv_info_valid];
+    assign m_BRESP_o = sa_BRESP_valid[slv_info_valid];
+    assign m_BVALID_o = ~(fifo_slv_ord_empty | fifo_wresp_empty[slv_info_valid]);
+    // -- Output to Slave arbitration
+    generate
+        for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin
+            assign sa_BREADY_o[slv_idx] = ~fifo_wresp_full[slv_idx];
+        end
+    endgenerate
 endmodule

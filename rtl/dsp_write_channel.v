@@ -72,16 +72,100 @@ module dsp_write_channel
     // ---- Write response channel          
     output  [SLV_AMT-1:0]                   sa_BREADY_o
 );
+    // Internal signal declaration
+    // -- AW channel to W channel 
+    wire [SLV_ID_W-1:0] AW_W_slv_id;
+    wire                AW_W_disable;
+    // -- AW channel to B channel
+    wire [SLV_ID_W-1:0] AW_B_slv_id;
+    wire                AW_B_shift_en;
+    
+    // Module
     dsp_WADDR_channel #(
-    
+        .SLV_AMT(SLV_AMT),
+        .OUTSTANDING_AMT(OUTSTANDING_AMT),
+        .DATA_WIDTH(DATA_WIDTH),
+        .ADDR_WIDTH(ADDR_WIDTH),
+        .TRANS_MST_ID_W(TRANS_MST_ID_W),
+        .TRANS_BURST_W(TRANS_BURST_W),
+        .TRANS_DATA_LEN_W(TRANS_DATA_LEN_W),
+        .TRANS_DATA_SIZE_W(TRANS_DATA_SIZE_W),
+        .TRANS_WR_RESP_W(TRANS_WR_RESP_W),
+        .SLV_ID_W(SLV_ID_W),
+        .SLV_ID_MSB_IDX(SLV_ID_MSB_IDX),
+        .SLV_ID_LSB_IDX(SLV_ID_LSB_IDX)
     ) WADDR_channel (
-    
+        .ACLK_i(ACLK_i),
+        .ARESETn_i(ARESETn_i),
+        .m_AWID_i(m_AWID_i),
+        .m_AWADDR_i(m_AWADDR_i),
+        .m_AWBURST_i(m_AWBURST_i),
+        .m_AWLEN_i(m_AWLEN_i),
+        .m_AWSIZE_i(m_AWSIZE_i),
+        .m_AWVALID_i(m_AWVALID_i),
+        .m_WVALID_i(m_WVALID_i),
+        .m_WREADY_i(m_WREADY_o),
+        .sa_AWREADY_i(sa_AWREADY_i),
+        .m_AWREADY_o(m_AWREADY_o),
+        .sa_AWID_o(sa_AWID_o),
+        .sa_AWADDR_o(sa_AWADDR_o),
+        .sa_AWBURST_o(sa_AWBURST_o),
+        .sa_AWLEN_o(sa_AWLEN_o),
+        .sa_AWSIZE_o(sa_AWSIZE_o),
+        .sa_AWVALID_o(sa_AWVALID_o),
+        .sa_AW_outst_full_o(sa_AW_outst_full_o),
+        .dsp_WDATA_slv_id_o(AW_W_slv_id),
+        .dsp_WDATA_disable_o(AW_W_disable),
+        .dsp_WRESP_slv_id_o(AW_B_slv_id),
+        .dsp_WRESP_shift_en_o(AW_B_shift_en)
     );
     
     dsp_WDATA_channel #(
-    
+        .SLV_AMT(SLV_AMT),
+        .DATA_WIDTH(DATA_WIDTH),
+        .SLV_ID_W(SLV_ID_W),
+        .SLV_ID_MSB_IDX(SLV_ID_MSB_IDX),
+        .SLV_ID_LSB_IDX(SLV_ID_LSB_IDX)
     ) WDATA_channel (
+        .m_WDATA_i(m_WDATA_i),
+        .m_WLAST_i(m_WLAST_i),
+        .m_WVALID_i(m_WVALID_i),
+        .sa_WREADY_i(sa_WREADY_i),
+        .dsp_AW_slv_id_i(AW_W_slv_id),
+        .dsp_AW_disable_i(AW_W_disable),
+        .m_WREADY_o(m_WREADY_o),
+        .sa_WDATA_o(sa_WDATA_o),
+        .sa_WLAST_o(sa_WLAST_o),
+        .sa_WVALID_o(sa_WVALID_o),
+        .sa_WDATA_sel_o(sa_WDATA_sel_o)
+    );
     
+    dsp_WRESP_channel #(
+        .SLV_AMT(SLV_AMT),
+        .OUTSTANDING_AMT(OUTSTANDING_AMT),
+        .DATA_WIDTH(DATA_WIDTH),
+        .ADDR_WIDTH(ADDR_WIDTH),
+        .TRANS_MST_ID_W(TRANS_MST_ID_W),
+        .TRANS_BURST_W(TRANS_BURST_W),
+        .TRANS_DATA_LEN_W(TRANS_DATA_LEN_W),
+        .TRANS_DATA_SIZE_W(TRANS_DATA_SIZE_W),
+        .TRANS_WR_RESP_W(TRANS_WR_RESP_W),
+        .SLV_ID_W(SLV_ID_W),
+        .SLV_ID_MSB_IDX(SLV_ID_MSB_IDX),
+        .SLV_ID_LSB_IDX(SLV_ID_LSB_IDX)
+    ) WRESP_channel (
+        .ACLK_i(ACLK_i),
+        .ARESETn_i(ARESETn_i),
+        .m_BREADY_i(m_BREADY_i),
+        .sa_BID_i(sa_BID_i),
+        .sa_BRESP_i(sa_BRESP_i),
+        .sa_BVALID_i(sa_BVALID_i),
+        .dsp_AW_slv_id_i(dsp_AW_slv_id_i),
+        .dsp_AW_shift_en_i(dsp_AW_shift_en_i),
+        .m_BID_o(m_BID_o),
+        .m_BRESP_o(m_BRESP_o),
+        .m_BVALID_o(m_BVALID_o),
+        .sa_BREADY_o(sa_BREADY_o)
     );
 
 endmodule
