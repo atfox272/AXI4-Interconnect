@@ -159,42 +159,42 @@ module sa_WDATA_channel
     
     // Combinational logic
     // -- FIFO WDATA ordering
-    assign ADDR_info = {AW_mst_id_i, AW_AxLEN_i};
-    assign {Ax_mst_id_valid, Ax_AxLEN_valid} = ADDR_info_valid;
-    assign fifo_order_rd_en = s_WLAST_o_nxt & shift_en_trans_ctn;
+    assign ADDR_info                            = {AW_mst_id_i, AW_AxLEN_i};
+    assign {Ax_mst_id_valid, Ax_AxLEN_valid}    = ADDR_info_valid;
+    assign fifo_order_rd_en                     = s_WLAST_o_nxt & shift_en_trans_ctn;
     generate
         for(mst_idx = 0; mst_idx < MST_AMT; mst_idx = mst_idx + 1) begin
             // Onehot decoder - Master ID
-            assign mst_sel[mst_idx] = Ax_mst_id_valid == mst_idx;
+            assign mst_sel[mst_idx]             = Ax_mst_id_valid == mst_idx;
             // FIFO WDATA
-            assign DATA_info[mst_idx] = {dsp_WDATA_i[DATA_WIDTH*(mst_idx+1)-1-:DATA_WIDTH]};
-            assign dsp_WDATA_valid[mst_idx] = DATA_info_valid[mst_idx];
-            assign dsp_WVALID_dec[mst_idx] = dsp_WVALID_i[mst_idx] & dsp_slv_sel_i[mst_idx];
-            assign fifo_wdata_wr_en[mst_idx] = dsp_handshake_occur[mst_idx];
-            assign fifo_wdata_rd_en[mst_idx] = mst_sel[mst_idx] & WDATA_channel_shift_en;
+            assign DATA_info[mst_idx]           = {dsp_WDATA_i[DATA_WIDTH*(mst_idx+1)-1-:DATA_WIDTH]};
+            assign dsp_WDATA_valid[mst_idx]     = DATA_info_valid[mst_idx];
+            assign dsp_WVALID_dec[mst_idx]      = dsp_WVALID_i[mst_idx] & dsp_slv_sel_i[mst_idx];
+            assign fifo_wdata_wr_en[mst_idx]    = dsp_handshake_occur[mst_idx];
+            assign fifo_wdata_rd_en[mst_idx]    = mst_sel[mst_idx] & WDATA_channel_shift_en;
             // Handshake detector
             assign dsp_handshake_occur[mst_idx] = dsp_WVALID_dec[mst_idx] & dsp_WREADY_o[mst_idx];
             // Dispatcher Interface 
-            assign dsp_WREADY_o[mst_idx] = ~fifo_wdata_full[mst_idx];
+            assign dsp_WREADY_o[mst_idx]        = ~fifo_wdata_full[mst_idx];
         end
     endgenerate
     // Booting condition 
-    assign transaction_en = ~fifo_wdata_empt[Ax_mst_id_valid] & ~fifo_order_empt;
+    assign transaction_en           = ~fifo_wdata_empt[Ax_mst_id_valid] & ~fifo_order_empt;
     // Transfer counter
-    assign shift_en_trans_ctn = ~fifo_wdata_empt[Ax_mst_id_valid] & WDATA_channel_shift_en;
-    assign transfer_ctn_incr = transfer_ctn_r + 1'b1;
-    assign transfer_ctn_nxt = (Ax_AxLEN_valid == transfer_ctn_r) ? {TRANS_DATA_LEN_W{1'b0}} : transfer_ctn_incr;
+    assign shift_en_trans_ctn       = ~fifo_wdata_empt[Ax_mst_id_valid] & WDATA_channel_shift_en;
+    assign transfer_ctn_incr        = transfer_ctn_r + 1'b1;
+    assign transfer_ctn_nxt         = (Ax_AxLEN_valid == transfer_ctn_r) ? {TRANS_DATA_LEN_W{1'b0}} : transfer_ctn_incr;
     // Handshake detector
-    assign slv_handshake_occur = s_WVALID_o_r & s_WREADY_i;
+    assign slv_handshake_occur      = s_WVALID_o_r & s_WREADY_i;
     // Output control 
-    assign WDATA_channel_shift_en = transaction_boot | transaction_stop | slv_handshake_occur;
-    assign AW_stall_o = fifo_order_full;
-    assign s_WVALID_o_nxt = transaction_en;
-    assign s_WLAST_o_nxt = (Ax_AxLEN_valid == transfer_ctn_r) & transaction_en;
-    assign s_WDATA_o_nxt = dsp_WDATA_valid[Ax_mst_id_valid];
-    assign s_WVALID_o = s_WVALID_o_r;
-    assign s_WLAST_o = s_WLAST_o_r;
-    assign s_WDATA_o = s_WDATA_o_r;
+    assign WDATA_channel_shift_en   = transaction_boot | transaction_stop | slv_handshake_occur;
+    assign AW_stall_o               = fifo_order_full;
+    assign s_WVALID_o_nxt           = transaction_en;
+    assign s_WLAST_o_nxt            = (Ax_AxLEN_valid == transfer_ctn_r) & transaction_en;
+    assign s_WDATA_o_nxt            = dsp_WDATA_valid[Ax_mst_id_valid];
+    assign s_WVALID_o               = s_WVALID_o_r;
+    assign s_WLAST_o                = s_WLAST_o_r;
+    assign s_WDATA_o                = s_WDATA_o_r;
     
     
     // Flip-flop logic
