@@ -222,14 +222,14 @@ module axi_interconnect
     wire    [TRANS_DATA_SIZE_W*SLV_AMT-1:0] dsp_sa_AWSIZE_o         [MST_AMT-1:0];
     wire    [SLV_AMT-1:0]                   dsp_sa_AWVALID_o        [MST_AMT-1:0];
     wire    [SLV_AMT-1:0]                   dsp_sa_AW_outst_full_o  [MST_AMT-1:0];
-    // ---- Write data channel             
+    // -- -- -- Write data channel             
     wire    [DATA_WIDTH*SLV_AMT-1:0]        dsp_sa_WDATA_o          [MST_AMT-1:0];
     wire    [SLV_AMT-1:0]                   dsp_sa_WLAST_o          [MST_AMT-1:0];
     wire    [SLV_AMT-1:0]                   dsp_sa_WVALID_o         [MST_AMT-1:0];
     wire    [SLV_AMT-1:0]                   dsp_sa_WDATA_sel_o      [MST_AMT-1:0];
-    // ---- Write response channel         
+    // -- -- -- Write response channel         
     wire    [SLV_AMT-1:0]                   dsp_sa_BREADY_o         [MST_AMT-1:0];
-    // ---- Read address channel           
+    // -- -- -- Read address channel           
     wire    [TRANS_MST_ID_W*SLV_AMT-1:0]    dsp_sa_ARID_o           [MST_AMT-1:0];
     wire    [ADDR_WIDTH*SLV_AMT-1:0]        dsp_sa_ARADDR_o         [MST_AMT-1:0];
     wire    [TRANS_BURST_W*SLV_AMT-1:0]     dsp_sa_ARBURST_o        [MST_AMT-1:0];
@@ -237,8 +237,51 @@ module axi_interconnect
     wire    [TRANS_DATA_SIZE_W*SLV_AMT-1:0] dsp_sa_ARSIZE_o         [MST_AMT-1:0];
     wire    [SLV_AMT-1:0]                   dsp_sa_ARVALID_o        [MST_AMT-1:0];
     wire    [SLV_AMT-1:0]                   dsp_sa_AR_outst_full_o  [MST_AMT-1:0];
-    // ---- Read data channel              
+    // -- -- -- Read data channel              
     wire    [SLV_AMT-1:0]                   dsp_sa_RREADY_o         [MST_AMT-1:0];
+    // -- Slave Arbitration
+    // -- -- Input
+    // -- -- -- Write address channel
+    wire    [TRANS_MST_ID_W*MST_AMT-1:0]    sa_dsp_AWID_i           [SLV_AMT-1:0];
+    wire    [ADDR_WIDTH*MST_AMT-1:0]        sa_dsp_AWADDR_i         [SLV_AMT-1:0];
+    wire    [TRANS_BURST_W*MST_AMT-1:0]     sa_dsp_AWBURST_i        [SLV_AMT-1:0];
+    wire    [TRANS_DATA_LEN_W*MST_AMT-1:0]  sa_dsp_AWLEN_i          [SLV_AMT-1:0];
+    wire    [TRANS_DATA_SIZE_W*MST_AMT-1:0] sa_dsp_AWSIZE_i         [SLV_AMT-1:0];
+    wire    [MST_AMT-1:0]                   sa_dsp_AWVALID_i        [SLV_AMT-1:0];
+    wire    [MST_AMT-1:0]                   sa_dsp_AW_outst_full_i  [SLV_AMT-1:0];
+    // -- -- -- Write data channel
+    wire    [DATA_WIDTH*MST_AMT-1:0]        sa_dsp_WDATA_i          [SLV_AMT-1:0];
+    wire    [MST_AMT-1:0]                   sa_dsp_WLAST_i          [SLV_AMT-1:0];
+    wire    [MST_AMT-1:0]                   sa_dsp_WVALID_i         [SLV_AMT-1:0];
+    wire    [MST_AMT-1:0]                   sa_dsp_slv_sel_i        [SLV_AMT-1:0];
+    // -- -- -- Write response channel
+    wire    [MST_AMT-1:0]                   sa_dsp_BREADY_i         [SLV_AMT-1:0];
+    // -- -- -- Read address channel
+    wire    [TRANS_MST_ID_W*MST_AMT-1:0]    sa_dsp_ARID_i           [SLV_AMT-1:0];
+    wire    [ADDR_WIDTH*MST_AMT-1:0]        sa_dsp_ARADDR_i         [SLV_AMT-1:0];
+    wire    [TRANS_BURST_W*MST_AMT-1:0]     sa_dsp_ARBURST_i        [SLV_AMT-1:0];
+    wire    [TRANS_DATA_LEN_W*MST_AMT-1:0]  sa_dsp_ARLEN_i          [SLV_AMT-1:0];
+    wire    [TRANS_DATA_SIZE_W*MST_AMT-1:0] sa_dsp_ARSIZE_i         [SLV_AMT-1:0];
+    wire    [MST_AMT-1:0]                   sa_dsp_ARVALID_i        [SLV_AMT-1:0];
+    wire    [MST_AMT-1:0]                   sa_dsp_AR_outst_full_i  [SLV_AMT-1:0];
+    // -- -- -- Read data channel
+    wire    [MST_AMT-1:0]                   sa_dsp_RREADY_i         [SLV_AMT-1:0];
+    // -- -- Output 
+    // -- -- -- Write address channel (master)
+    wire    [MST_AMT-1:0]                   sa_dsp_AWREADY_o        [SLV_AMT-1:0];
+    // -- -- -- Write data channel (master)     
+    wire    [MST_AMT-1:0]                   sa_dsp_WREADY_o         [SLV_AMT-1:0];
+    // -- -- -- Write response channel (master) 
+    wire    [TRANS_MST_ID_W*MST_AMT-1:0]    sa_dsp_BID_o            [SLV_AMT-1:0];
+    wire    [TRANS_WR_RESP_W*MST_AMT-1:0]   sa_dsp_BRESP_o          [SLV_AMT-1:0];
+    wire    [MST_AMT-1:0]                   sa_dsp_BVALID_o         [SLV_AMT-1:0];
+    // -- -- -- Read address channel (master)   
+    wire    [MST_AMT-1:0]                   sa_dsp_ARREADY_o        [SLV_AMT-1:0];
+    // -- -- -- Read data channel (master)      
+    wire    [TRANS_MST_ID_W*MST_AMT-1:0]    sa_dsp_RID_o            [SLV_AMT-1:0];
+    wire    [DATA_WIDTH*MST_AMT-1:0]        sa_dsp_RDATA_o          [SLV_AMT-1:0];
+    wire    [MST_AMT-1:0]                   sa_dsp_RLAST_o          [SLV_AMT-1:0];
+    wire    [MST_AMT-1:0]                   sa_dsp_RVALID_o         [SLV_AMT-1:0];
     
     // Combinational logic
     generate
@@ -287,7 +330,6 @@ module axi_interconnect
             assign m_RDATA_o[DATA_WIDTH*(mst_idx+1)-1-:DATA_WIDTH]          = m_RDATA[mst_idx];
             assign m_RLAST_o[mst_idx]                                       = m_RLAST[mst_idx];
             assign m_RVALID_o[mst_idx]                                      = m_RVALID[mst_idx];
-            
         end
         // -- To Slave
         for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin
@@ -334,7 +376,45 @@ module axi_interconnect
             // -- -- -- Output
             assign s_RREADY_o[slv_idx]                                              = s_RREADY[slv_idx];
         end
+        // -- Internal connectio 
+        for(mst_idx = 0; mst_idx < MST_AMT; mst_idx = mst_idx + 1) begin
+            for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin
+            // -- -- Slave Arbitration to Dispatcher
+            assign dsp_sa_AWREADY_i[mst_idx][slv_idx]                                           = sa_dsp_AWREADY_o[slv_idx][mst_idx];
+            assign dsp_sa_WREADY_i[mst_idx][slv_idx]                                            = sa_dsp_WREADY_o[slv_idx][mst_idx];
+            assign dsp_sa_BID_i[mst_idx][TRANS_MST_ID_W*(slv_idx+1)-1-:TRANS_MST_ID_W]          = sa_dsp_BID_o[slv_idx][TRANS_MST_ID_W*(mst_idx+1)-1-:TRANS_MST_ID_W];
+            assign dsp_sa_BRESP_i[mst_idx][TRANS_WR_RESP_W*(slv_idx+1)-1-:TRANS_WR_RESP_W]      = sa_dsp_BRESP_o[slv_idx][TRANS_WR_RESP_W*(mst_idx+1)-1-:TRANS_WR_RESP_W];
+            assign dsp_sa_BVALID_i[mst_idx][slv_idx]                                            = sa_dsp_BVALID_o[slv_idx][mst_idx];
+            assign dsp_sa_ARREADY_i[mst_idx][slv_idx]                                           = sa_dsp_ARREADY_o[slv_idx][mst_idx];
+            assign dsp_sa_RID_i[mst_idx][TRANS_MST_ID_W*(slv_idx+1)-1-:TRANS_MST_ID_W]          = sa_dsp_RID_o[slv_idx][TRANS_MST_ID_W*(mst_idx+1)-1-:TRANS_MST_ID_W];
+            assign dsp_sa_RDATA_i[mst_idx][DATA_WIDTH*(slv_idx+1)-1-:DATA_WIDTH]                = sa_dsp_RDATA_o[slv_idx][DATA_WIDTH*(mst_idx+1)-1-:DATA_WIDTH];
+            assign dsp_sa_RLAST_i[mst_idx][slv_idx]                                             = sa_dsp_RLAST_o[slv_idx][mst_idx];
+            assign dsp_sa_RVALID_i[mst_idx][slv_idx]                                            = sa_dsp_RVALID_o[slv_idx][mst_idx];
+            // -- -- Dispatcher to Slave Arbitration
+            assign sa_dsp_AWID_i[slv_idx][TRANS_MST_ID_W*(mst_idx+1)-1-:TRANS_MST_ID_W]         = dsp_sa_AWID_o[mst_idx][TRANS_MST_ID_W*(slv_idx+1)-1-:TRANS_MST_ID_W];
+            assign sa_dsp_AWADDR_i[slv_idx][ADDR_WIDTH*(mst_idx+1)-1-:ADDR_WIDTH]               = dsp_sa_AWADDR_o[mst_idx][ADDR_WIDTH*(slv_idx+1)-1-:ADDR_WIDTH];
+            assign sa_dsp_AWBURST_i[slv_idx][TRANS_BURST_W*(mst_idx+1)-1-:TRANS_BURST_W]        = dsp_sa_AWBURST_o[mst_idx][TRANS_BURST_W*(slv_idx+1)-1-:TRANS_BURST_W];
+            assign sa_dsp_AWLEN_i[slv_idx][TRANS_DATA_LEN_W*(mst_idx+1)-1-:TRANS_DATA_LEN_W]    = dsp_sa_AWLEN_o[mst_idx][TRANS_DATA_LEN_W*(slv_idx+1)-1-:TRANS_DATA_LEN_W];
+            assign sa_dsp_AWSIZE_i[slv_idx][TRANS_DATA_SIZE_W*(mst_idx+1)-1-:TRANS_DATA_SIZE_W] = dsp_sa_AWSIZE_o[mst_idx][TRANS_DATA_SIZE_W*(slv_idx+1)-1-:TRANS_DATA_SIZE_W];
+            assign sa_dsp_AWVALID_i[slv_idx][mst_idx]                                           = dsp_sa_AWVALID_o[mst_idx][slv_idx];
+            assign sa_dsp_AW_outst_full_i[slv_idx][mst_idx]                                     = dsp_sa_AW_outst_full_o[mst_idx][slv_idx];
+            assign sa_dsp_WDATA_i[slv_idx][DATA_WIDTH*(mst_idx+1)-1-:DATA_WIDTH]                = dsp_sa_WDATA_o[mst_idx][DATA_WIDTH*(slv_idx+1)-1-:DATA_WIDTH];
+            assign sa_dsp_WLAST_i[slv_idx][mst_idx]                                             = dsp_sa_WLAST_o[mst_idx][slv_idx];
+            assign sa_dsp_WVALID_i[slv_idx][mst_idx]                                            = dsp_sa_WVALID_o[mst_idx][slv_idx];
+            assign sa_dsp_slv_sel_i[slv_idx][mst_idx]                                           = dsp_sa_WDATA_sel_o[mst_idx][slv_idx];
+            assign sa_dsp_BREADY_i[slv_idx][mst_idx]                                            = dsp_sa_BREADY_o[mst_idx][slv_idx];
+            assign sa_dsp_ARID_i[slv_idx][TRANS_MST_ID_W*(mst_idx+1)-1-:TRANS_MST_ID_W]         = dsp_sa_ARID_o[mst_idx][TRANS_MST_ID_W*(slv_idx+1)-1-:TRANS_MST_ID_W];
+            assign sa_dsp_ARADDR_i[slv_idx][ADDR_WIDTH*(mst_idx+1)-1-:ADDR_WIDTH]               = dsp_sa_ARADDR_o[mst_idx][ADDR_WIDTH*(slv_idx+1)-1-:ADDR_WIDTH];
+            assign sa_dsp_ARBURST_i[slv_idx][TRANS_BURST_W*(mst_idx+1)-1-:TRANS_BURST_W]        = dsp_sa_ARBURST_o[mst_idx][TRANS_BURST_W*(slv_idx+1)-1-:TRANS_BURST_W];
+            assign sa_dsp_ARLEN_i[slv_idx][TRANS_DATA_LEN_W*(mst_idx+1)-1-:TRANS_DATA_LEN_W]    = dsp_sa_ARLEN_o[mst_idx][TRANS_DATA_LEN_W*(slv_idx+1)-1-:TRANS_DATA_LEN_W];
+            assign sa_dsp_ARSIZE_i[slv_idx][TRANS_DATA_SIZE_W*(mst_idx+1)-1-:TRANS_DATA_SIZE_W] = dsp_sa_ARSIZE_o[mst_idx][TRANS_DATA_SIZE_W*(slv_idx+1)-1-:TRANS_DATA_SIZE_W];
+            assign sa_dsp_ARVALID_i[slv_idx][mst_idx]                                           = dsp_sa_ARVALID_o[mst_idx][slv_idx];
+            assign sa_dsp_AR_outst_full_i[slv_idx][mst_idx]                                     = dsp_sa_AR_outst_full_o[mst_idx][slv_idx];
+            assign sa_dsp_RREADY_i[slv_idx][mst_idx]                                            = dsp_sa_RREADY_o[mst_idx][slv_idx];
+            end
+        end     
     endgenerate
+    
     // Internal module
     generate
         for(mst_idx = 0; mst_idx < MST_AMT; mst_idx = mst_idx + 1) begin
@@ -434,26 +514,26 @@ module axi_interconnect
             ) slave_arbitration (
                 .ACLK_i(ACLK_i),
                 .ARESETn_i(ARESETn_i),
-                .dsp_AWID_i(),
-                .dsp_AWADDR_i(),
-                .dsp_AWBURST_i(),
-                .dsp_AWLEN_i(),
-                .dsp_AWSIZE_i(),
-                .dsp_AWVALID_i(),
-                .dsp_AW_outst_full_i(),
-                .dsp_WDATA_i(),
-                .dsp_WLAST_i(),
-                .dsp_WVALID_i(),
-                .dsp_slv_sel_i(),
-                .dsp_BREADY_i(),
-                .dsp_ARID_i(),
-                .dsp_ARADDR_i(),
-                .dsp_ARBURST_i(),
-                .dsp_ARLEN_i(),
-                .dsp_ARSIZE_i(),
-                .dsp_ARVALID_i(),
-                .dsp_AR_outst_full_i(),
-                .dsp_RREADY_i(),
+                .dsp_AWID_i(sa_dsp_AWID_i[slv_idx]),
+                .dsp_AWADDR_i(sa_dsp_AWADDR_i[slv_idx]),
+                .dsp_AWBURST_i(sa_dsp_AWBURST_i[slv_idx]),
+                .dsp_AWLEN_i(sa_dsp_AWLEN_i[slv_idx]),
+                .dsp_AWSIZE_i(sa_dsp_AWSIZE_i[slv_idx]),
+                .dsp_AWVALID_i(sa_dsp_AWVALID_i[slv_idx]),
+                .dsp_AW_outst_full_i(sa_dsp_AW_outst_full_i[slv_idx]),
+                .dsp_WDATA_i(sa_dsp_WDATA_i[slv_idx]),
+                .dsp_WLAST_i(sa_dsp_WLAST_i[slv_idx]),
+                .dsp_WVALID_i(sa_dsp_WVALID_i[slv_idx]),
+                .dsp_slv_sel_i(sa_dsp_slv_sel_i[slv_idx]),
+                .dsp_BREADY_i(sa_dsp_BREADY_i[slv_idx]),
+                .dsp_ARID_i(sa_dsp_ARID_i[slv_idx]),
+                .dsp_ARADDR_i(sa_dsp_ARADDR_i[slv_idx]),
+                .dsp_ARBURST_i(sa_dsp_ARBURST_i[slv_idx]),
+                .dsp_ARLEN_i(sa_dsp_ARLEN_i[slv_idx]),
+                .dsp_ARSIZE_i(sa_dsp_ARSIZE_i[slv_idx]),
+                .dsp_ARVALID_i(sa_dsp_ARVALID_i[slv_idx]),
+                .dsp_AR_outst_full_i(sa_dsp_AR_outst_full_i[slv_idx]),
+                .dsp_RREADY_i(sa_dsp_RREADY_i[slv_idx]),
                 .s_AWREADY_i(s_AWREADY[slv_idx]),
                 .s_WREADY_i(s_WREADY[slv_idx]),
                 .s_BID_i(s_BID[slv_idx]),
@@ -464,16 +544,16 @@ module axi_interconnect
                 .s_RDATA_i(s_RDATA[slv_idx]),
                 .s_RLAST_i(s_RLAST[slv_idx]),
                 .s_RVALID_i(s_RVALID[slv_idx]),
-                .dsp_AWREADY_o(),
-                .dsp_WREADY_o(),
-                .dsp_BID_o(),
-                .dsp_BRESP_o(),
-                .dsp_BVALID_o(),
-                .dsp_ARREADY_o(),
-                .dsp_RID_o(),
-                .dsp_RDATA_o(),
-                .dsp_RLAST_o(),
-                .dsp_RVALID_o(),
+                .dsp_AWREADY_o(sa_dsp_AWREADY_o[slv_idx]),
+                .dsp_WREADY_o(sa_dsp_WREADY_o[slv_idx]),
+                .dsp_BID_o(sa_dsp_BID_o[slv_idx]),
+                .dsp_BRESP_o(sa_dsp_BRESP_o[slv_idx]),
+                .dsp_BVALID_o(sa_dsp_BVALID_o[slv_idx]),
+                .dsp_ARREADY_o(sa_dsp_ARREADY_o[slv_idx]),
+                .dsp_RID_o(sa_dsp_RID_o[slv_idx]),
+                .dsp_RDATA_o(sa_dsp_RDATA_o[slv_idx]),
+                .dsp_RLAST_o(sa_dsp_RLAST_o[slv_idx]),
+                .dsp_RVALID_o(sa_dsp_RVALID_o[slv_idx]),
                 .s_AWID_o(s_AWID[slv_idx]),
                 .s_AWADDR_o(s_AWADDR[slv_idx]),
                 .s_AWBURST_o(s_AWBURST[slv_idx]),
