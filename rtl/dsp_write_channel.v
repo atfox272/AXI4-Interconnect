@@ -1,4 +1,3 @@
-`timescale 1ns / 1ps
 module dsp_write_channel
 #(
     // Dispatcher configuration
@@ -59,7 +58,7 @@ module dsp_write_channel
     // ---- Write address channel
     output  [TRANS_MST_ID_W*SLV_AMT-1:0]    sa_AWID_o,
     output  [ADDR_WIDTH*SLV_AMT-1:0]        sa_AWADDR_o,
-    output  [TRANS_BURST_W-1:0]             sa_AWBURST_o,
+    output  [TRANS_BURST_W*SLV_AMT-1:0]     sa_AWBURST_o,
     output  [TRANS_DATA_LEN_W*SLV_AMT-1:0]  sa_AWLEN_o,
     output  [TRANS_DATA_SIZE_W*SLV_AMT-1:0] sa_AWSIZE_o,
     output  [SLV_AMT-1:0]                   sa_AWVALID_o,
@@ -81,7 +80,7 @@ module dsp_write_channel
     wire                AW_B_shift_en;
     
     // Module
-    dsp_WADDR_channel #(
+    dsp_xADDR_channel #(
         .SLV_AMT(SLV_AMT),
         .OUTSTANDING_AMT(OUTSTANDING_AMT),
         .DATA_WIDTH(DATA_WIDTH),
@@ -90,32 +89,31 @@ module dsp_write_channel
         .TRANS_BURST_W(TRANS_BURST_W),
         .TRANS_DATA_LEN_W(TRANS_DATA_LEN_W),
         .TRANS_DATA_SIZE_W(TRANS_DATA_SIZE_W),
-        .TRANS_WR_RESP_W(TRANS_WR_RESP_W),
         .SLV_ID_W(SLV_ID_W),
         .SLV_ID_MSB_IDX(SLV_ID_MSB_IDX),
         .SLV_ID_LSB_IDX(SLV_ID_LSB_IDX)
     ) WADDR_channel (
         .ACLK_i(ACLK_i),
         .ARESETn_i(ARESETn_i),
-        .m_AWID_i(m_AWID_i),
-        .m_AWADDR_i(m_AWADDR_i),
-        .m_AWBURST_i(m_AWBURST_i),
-        .m_AWLEN_i(m_AWLEN_i),
-        .m_AWSIZE_i(m_AWSIZE_i),
-        .m_AWVALID_i(m_AWVALID_i),
-        .m_WVALID_i(m_WVALID_i),
-        .m_WREADY_i(m_WREADY_o),
-        .sa_AWREADY_i(sa_AWREADY_i),
-        .m_AWREADY_o(m_AWREADY_o),
-        .sa_AWID_o(sa_AWID_o),
-        .sa_AWADDR_o(sa_AWADDR_o),
-        .sa_AWBURST_o(sa_AWBURST_o),
-        .sa_AWLEN_o(sa_AWLEN_o),
-        .sa_AWSIZE_o(sa_AWSIZE_o),
-        .sa_AWVALID_o(sa_AWVALID_o),
-        .sa_AW_outst_full_o(sa_AW_outst_full_o),
-        .dsp_WDATA_slv_id_o(AW_W_slv_id),
-        .dsp_WDATA_disable_o(AW_W_disable),
+        .m_AxID_i(m_AWID_i),
+        .m_AxADDR_i(m_AWADDR_i),
+        .m_AxBURST_i(m_AWBURST_i),
+        .m_AxLEN_i(m_AWLEN_i),
+        .m_AxSIZE_i(m_AWSIZE_i),
+        .m_AxVALID_i(m_AWVALID_i),
+        .m_xVALID_i(m_WVALID_i),
+        .m_xREADY_i(m_WREADY_o),
+        .sa_AxREADY_i(sa_AWREADY_i),
+        .m_AxREADY_o(m_AWREADY_o),
+        .sa_AxID_o(sa_AWID_o),
+        .sa_AxADDR_o(sa_AWADDR_o),
+        .sa_AxBURST_o(sa_AWBURST_o),
+        .sa_AxLEN_o(sa_AWLEN_o),
+        .sa_AxSIZE_o(sa_AWSIZE_o),
+        .sa_AxVALID_o(sa_AWVALID_o),
+        .sa_Ax_outst_full_o(sa_AW_outst_full_o),
+        .dsp_xDATA_slv_id_o(AW_W_slv_id),
+        .dsp_xDATA_disable_o(AW_W_disable),
         .dsp_WRESP_slv_id_o(AW_B_slv_id),
         .dsp_WRESP_shift_en_o(AW_B_shift_en)
     );
@@ -160,8 +158,8 @@ module dsp_write_channel
         .sa_BID_i(sa_BID_i),
         .sa_BRESP_i(sa_BRESP_i),
         .sa_BVALID_i(sa_BVALID_i),
-        .dsp_AW_slv_id_i(dsp_AW_slv_id_i),
-        .dsp_AW_shift_en_i(dsp_AW_shift_en_i),
+        .dsp_AW_slv_id_i(AW_B_slv_id),
+        .dsp_AW_shift_en_i(AW_B_shift_en),
         .m_BID_o(m_BID_o),
         .m_BRESP_o(m_BRESP_o),
         .m_BVALID_o(m_BVALID_o),

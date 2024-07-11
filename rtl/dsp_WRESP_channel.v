@@ -110,6 +110,7 @@ module dsp_WRESP_channel
     
     // Combinational logic
     // -- Slave order FIFO
+    assign slv_info = dsp_AW_slv_id_i;
     assign fifo_slv_ord_wr_en = dsp_AW_shift_en_i;
     assign fifo_slv_ord_rd_en = m_handshake_occur;
     // -- Slave resp FIFO
