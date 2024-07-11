@@ -13,7 +13,9 @@ module dsp_read_channel
     // Slave configuration
     parameter SLV_ID_W          = $clog2(SLV_AMT),
     parameter SLV_ID_MSB_IDX    = 30,
-    parameter SLV_ID_LSB_IDX    = 30
+    parameter SLV_ID_LSB_IDX    = 30,
+    // Dispatcher DATA depth configuration
+    parameter DSP_RDATA_DEPTH   = 16
 )
 (
     // Input declaration
@@ -107,7 +109,8 @@ module dsp_read_channel
         .SLV_AMT(SLV_AMT),
         .DATA_WIDTH(DATA_WIDTH),
         .TRANS_MST_ID_W(TRANS_MST_ID_W),
-        .SLV_ID_W(SLV_ID_W)
+        .SLV_ID_W(SLV_ID_W),
+        .DSP_RDATA_DEPTH(DSP_RDATA_DEPTH)
     ) RDATA_channel (
         .ACLK_i(ACLK_i),
         .ARESETn_i(ARESETn_i),

@@ -74,7 +74,7 @@ module dsp_WRESP_channel
     // -- Slave order FIFO
     fifo #(
         .DATA_WIDTH(SLV_INFO_W),
-        .FIFO_WIDTH(OUTSTANDING_AMT)
+        .FIFO_DEPTH(OUTSTANDING_AMT)
     ) fifo_slv_order (
         .clk(ACLK_i),
         .data_i(slv_info),
@@ -92,7 +92,7 @@ module dsp_WRESP_channel
         for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin
             fifo #(
                 .DATA_WIDTH(RESP_INFO_W),
-                .FIFO_WIDTH(OUTSTANDING_AMT)
+                .FIFO_DEPTH(OUTSTANDING_AMT)
             ) fifo_WRESP_slv (
                 .clk(ACLK_i),
                 .data_i(resp_info[slv_idx]),

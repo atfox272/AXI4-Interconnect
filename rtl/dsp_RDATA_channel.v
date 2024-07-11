@@ -6,7 +6,9 @@ module dsp_RDATA_channel
     parameter DATA_WIDTH        = 32,
     parameter TRANS_MST_ID_W    = 5,    // Bus width of master transaction ID 
     // Slave configuration
-    parameter SLV_ID_W          = $clog2(SLV_AMT)
+    parameter SLV_ID_W          = $clog2(SLV_AMT),
+    // Dispatcher DATA depth configuration
+    parameter DSP_RDATA_DEPTH   = 16
 )
 (
     // Input declaration
@@ -67,7 +69,7 @@ module dsp_RDATA_channel
         fifo 
             #(
             .DATA_WIDTH(DATA_INFO_W),
-            .FIFO_DEPTH(32)
+            .FIFO_DEPTH(DSP_RDATA_DEPTH)
         ) fifo_rdata (
             .clk(ACLK_i),
             .data_i(data_info[slv_idx]),
