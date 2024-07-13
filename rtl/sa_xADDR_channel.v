@@ -63,6 +63,7 @@ module sa_xADDR_channel
     // ---- Pre Arbitration
     wire    [ADDR_INFO_W-1:0]       ADDR_info               [MST_AMT-1:0];
     wire    [ADDR_INFO_W-1:0]       ADDR_info_valid         [MST_AMT-1:0];
+    wire    [ADDR_WIDTH-1:0]        AxADDR_i                [MST_AMT-1:0];  // De-flatten wire 
     wire    [TRANS_MST_ID_W-1:0]    AxID_valid              [MST_AMT-1:0];
     wire    [ADDR_WIDTH-1:0]        AxADDR_valid            [MST_AMT-1:0];
     wire    [TRANS_BURST_W-1:0]     AxBURST_valid           [MST_AMT-1:0];
@@ -183,7 +184,8 @@ module sa_xADDR_channel
         assign dsp_AxREADY_o[mst_idx] = ~(dsp_dispatcher_full_i[mst_idx] | fifo_addr_info_full[mst_idx]);
         // FIFO
         assign ADDR_info[mst_idx] = {dsp_AxID_i[TRANS_MST_ID_W*(mst_idx+1)-1-:TRANS_MST_ID_W], dsp_AxADDR_i[ADDR_WIDTH*(mst_idx+1)-1-:ADDR_WIDTH], dsp_AxBURST_i[TRANS_BURST_W*(mst_idx+1)-1-:TRANS_BURST_W], dsp_AxLEN_i[TRANS_DATA_LEN_W*(mst_idx+1)-1-:TRANS_DATA_LEN_W], dsp_AxSIZE_i[TRANS_DATA_SIZE_W*(mst_idx+1)-1-:TRANS_DATA_SIZE_W]}; // ADDR_info[mst_0] = AxID[mst_0] | AxADDR[mst_0] | AxLEN[mst_0] | AxSIZE[mst_0]
-        assign slv_addr_decoder[mst_idx] = dsp_AxADDR_i[SLV_ID_MSB_IDX:SLV_ID_LSB_IDX] == SLV_ID;
+        assign AxADDR_i[mst_idx] = dsp_AxADDR_i[ADDR_WIDTH*(mst_idx+1)-1-:ADDR_WIDTH];
+        assign slv_addr_decoder[mst_idx] = AxADDR_i[mst_idx][SLV_ID_MSB_IDX:SLV_ID_LSB_IDX] == SLV_ID;
         assign dsp_AxVALID_dec[mst_idx] = slv_addr_decoder[mst_idx] & dsp_AxVALID_i[mst_idx];
         assign dsp_handshake_occur[mst_idx] = dsp_AxVALID_dec[mst_idx] & dsp_AxREADY_o[mst_idx];
         assign fifo_addr_info_wr_en[mst_idx] = dsp_handshake_occur[mst_idx];

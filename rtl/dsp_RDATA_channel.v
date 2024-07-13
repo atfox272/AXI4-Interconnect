@@ -36,9 +36,7 @@ module dsp_RDATA_channel
     output                                  m_RVALID_o,
     // -- To Slave Arbitration
     // ---- Read data channel
-    output  [SLV_AMT-1:0]                   sa_RREADY_o,
-    // -- To AR channel Dispatcher
-    output                                  dsp_R_handshake_occur
+    output  [SLV_AMT-1:0]                   sa_RREADY_o
 );
     // Local parameter 
     localparam DATA_INFO_W = TRANS_MST_ID_W + DATA_WIDTH + 1;   // RID_W + DATA_W + RLAST_W
@@ -113,7 +111,5 @@ module dsp_RDATA_channel
             assign sa_RREADY_o[slv_idx]= ~fifo_rdata_full[slv_idx];
         end
     endgenerate
-    // -- -- Output to AR channel dispatcher
-    assign dsp_R_handshake_occur = m_handshake_occur;
 
 endmodule

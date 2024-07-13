@@ -21,6 +21,7 @@ module axi_interconnect_tb;
     parameter                       SLV_ID_LSB_IDX      = 30;
     // Dispatcher DATA depth configuration
     parameter                       DSP_RDATA_DEPTH     = 16;
+    
     // Input declaration
     // -- Global signals
     logic                                   ACLK_i;
@@ -345,30 +346,176 @@ module axi_interconnect_tb;
     initial begin
         localparam mst_idx = 0;
         ARESETn_i <= 0;
-        
+     
 
         #5; ARESETn_i <= 1;
     end
     
     initial begin localparam mst_idx = 0;
-        m_AWID[mst_idx]    <= 0;m_AWADDR[mst_idx]  <= {2'b00, 30'd0};m_AWBURST[mst_idx] <= 0;m_AWLEN[mst_idx]   <= 0;m_AWSIZE[mst_idx]  <= 0;
-        m_AWVALID[mst_idx] <= 0;
+        #6; 
         
-        m_WDATA[mst_idx]  <= 0;m_WLAST[mst_idx]  <= 0;
-        m_WVALID[mst_idx] <= 0;
+        m_AR_transfer(.mst_id(mst_idx), .ARID(1), .ARADDR({2'b00, 30'd01}), .ARBURST(0), .ARLEN(0), .ARSIZE(0));
+        m_AR_transfer(.mst_id(mst_idx), .ARID(2), .ARADDR({2'b00, 30'd02}), .ARBURST(0), .ARLEN(0), .ARSIZE(0));
+        m_AR_transfer(.mst_id(mst_idx), .ARID(3), .ARADDR({2'b00, 30'd03}), .ARBURST(0), .ARLEN(0), .ARSIZE(0));
+        m_AR_transfer(.mst_id(mst_idx), .ARID(4), .ARADDR({2'b00, 30'd04}), .ARBURST(0), .ARLEN(0), .ARSIZE(0));
         
-        m_BREADY[mst_idx] <= 0;
+        @(posedge ACLK_i); #0.01;
+        m_ARVALID[mst_idx]  <= 0;
     end
     
-    initial begin localparam mst_idx = 0;
-        m_ARID[mst_idx]     <= 0;
-        m_ARADDR[mst_idx]   <= 0;
-        m_ARBURST[mst_idx]  <= 0;
-        m_ARLEN[mst_idx]    <= 0;
-        m_ARSIZE[mst_idx]   <= 0;
-        m_ARVALID[mst_idx]  <= 0;
+    initial begin localparam mst_idx = 1;
+        #6; 
         
-        m_RREADY[mst_idx]   <= 0;
+        m_AR_transfer(.mst_id(mst_idx), .ARID(1), .ARADDR({2'b00, 30'd01}), .ARBURST(0), .ARLEN(0), .ARSIZE(0));
+        m_AR_transfer(.mst_id(mst_idx), .ARID(2), .ARADDR({2'b01, 30'd02}), .ARBURST(0), .ARLEN(0), .ARSIZE(0));
+        m_AR_transfer(.mst_id(mst_idx), .ARID(3), .ARADDR({2'b00, 30'd03}), .ARBURST(0), .ARLEN(0), .ARSIZE(0));
+        m_AR_transfer(.mst_id(mst_idx), .ARID(4), .ARADDR({2'b01, 30'd04}), .ARBURST(0), .ARLEN(0), .ARSIZE(0));
+        
+        @(posedge ACLK_i); #0.01;
+        m_ARVALID[mst_idx]  <= 0;
     end
+    
+    
+    initial begin localparam mst_idx = 2;
+        #6; 
+        
+        m_AR_transfer(.mst_id(mst_idx), .ARID(1), .ARADDR({2'b01, 30'd01}), .ARBURST(0), .ARLEN(0), .ARSIZE(0));
+        m_AR_transfer(.mst_id(mst_idx), .ARID(2), .ARADDR({2'b01, 30'd02}), .ARBURST(0), .ARLEN(0), .ARSIZE(0));
+        
+        @(posedge ACLK_i); #0.01;
+        m_ARVALID[mst_idx]  <= 0;
+    end
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    // ------- DeepCode :v ------------
+    int idx = 0;
+    initial begin : INIT_VALUE_BLOCK
+        for(idx = 0; idx < MST_AMT; idx = idx + 1) begin
+            // R
+            m_ARID[idx]     <= 0;
+            m_ARADDR[idx]   <= 0;
+            m_ARBURST[idx]  <= 0;
+            m_ARLEN[idx]    <= 0;
+            m_ARSIZE[idx]   <= 0;
+            m_ARVALID[idx]  <= 0;
+            m_RREADY[idx]   <= 1'b1;
+            // W
+            m_AWID[idx]     <= 0;
+            m_AWADDR[idx]   <= 0;
+            m_AWBURST[idx]  <= 0;
+            m_AWLEN[idx]    <= 0;
+            m_AWSIZE[idx]   <= 0;
+            m_AWVALID[idx]  <= 0;
+            m_WDATA[idx]    <= 0;
+            m_WLAST[idx]    <= 0;
+            m_WVALID[idx]   <= 0;
+            m_BREADY[idx]   <= 1'b1;
+        end
+        for(idx = 0; idx < SLV_AMT; idx = idx + 1) begin
+            s_AWREADY[idx]  <= 1'b1;
+            s_WREADY[idx]   <= 1'b1;
+            s_BID[idx]      <= 0;
+            s_BRESP[idx]    <= 0;
+            s_BVALID[idx]   <= 0;
+            s_ARREADY[idx]  <= 1'b1;
+            s_RID[idx]      <= 0;
+            s_RDATA[idx]    <= 0;
+            s_RLAST[idx]    <= 0;
+            s_RVALID[idx]   <= 0;
+        end
+    end
+    
+    task automatic m_AR_transfer(
+        input [MST_ID_W-1:0]            mst_id,
+        input [TRANS_MST_ID_W-1:0]      ARID,
+        input [ADDR_WIDTH-1:0]          ARADDR,
+        input [TRANS_BURST_W-1:0]       ARBURST,
+        input [TRANS_DATA_LEN_W-1:0]    ARLEN,
+        input [TRANS_DATA_SIZE_W-1:0]   ARSIZE
+    );
+        @(posedge ACLK_i); #0.01;
+        m_ARID[mst_id]     <= ARID;
+        m_ARADDR[mst_id]   <= ARADDR;
+        m_ARBURST[mst_id]  <= ARBURST;
+        m_ARLEN[mst_id]    <= ARLEN;
+        m_ARSIZE[mst_id]   <= ARSIZE;
+        m_ARVALID[mst_id]  <= 1;
+    endtask
+    
+    task automatic m_AW_transfer(
+        input [MST_ID_W-1:0]            mst_id,
+        input [TRANS_MST_ID_W-1:0]      AWID,
+        input [ADDR_WIDTH-1:0]          AWADDR,
+        input [TRANS_BURST_W-1:0]       AWBURST,
+        input [TRANS_DATA_LEN_W-1:0]    AWLEN,
+        input [TRANS_DATA_SIZE_W-1:0]   AWSIZE
+    );
+        @(posedge ACLK_i); #0.01;
+        m_AWID[mst_id]     <= AWID;
+        m_AWADDR[mst_id]   <= AWADDR;
+        m_AWBURST[mst_id]  <= AWBURST;
+        m_AWLEN[mst_id]    <= AWLEN;
+        m_AWSIZE[mst_id]   <= AWSIZE;
+        m_AWVALID[mst_id]  <= 1'b1;
+    endtask
+    
+    task automatic m_W_transfer (
+        input [MST_ID_W-1:0]            mst_id,
+        input [TRANS_DATA_LEN_W-1:0]    burst_len,
+        input [DATA_WIDTH-1:0]          WDATA,
+        input                           WLAST
+    );
+        repeat(burst_len) begin
+            @(posedge ACLK_i); #0.01;
+            m_WDATA[mst_id]     <= WDATA;
+            m_WLAST[mst_id]     <= WLAST;
+            m_WVALID[mst_id]    <= 1'b1;
+        end
+    endtask
+    
+    task automatic s_R_transfer (
+        input [SLV_ID_W-1:0]            slv_id,
+        input [TRANS_DATA_LEN_W-1:0]    burst_len,
+        input [TRANS_SLV_ID_W-1:0]      RID, 
+        input [DATA_WIDTH-1:0]          RDATA,
+        input                           RLAST
+    );
+        repeat(burst_len) begin
+            @(posedge ACLK_i); #0.01;
+            s_RID[slv_id]       <= RID;
+            s_RDATA[slv_id]     <= RDATA;
+            s_RLAST[slv_id]     <= RLAST;
+            s_RVALID[slv_id]    <= 1'b1;
+        end
+    endtask
+    
+    task automatic s_B_transfer (
+        input [SLV_ID_W-1:0]        slv_id,
+        input [TRANS_SLV_ID_W-1:0]  BID,
+        input [TRANS_WR_RESP_W-1:0] BRESP
+    );
+        @(posedge ACLK_i); #0.01;
+        s_BID[slv_id]       <= BID;
+        s_BRESP[slv_id]     <= BRESP;
+        s_BVALID[slv_id]    <= 1'b1;
+    endtask
     
 endmodule

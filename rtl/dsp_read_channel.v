@@ -125,8 +125,7 @@ module dsp_read_channel
         .m_RDATA_o(m_RDATA_o),
         .m_RLAST_o(m_RLAST_o),
         .m_RVALID_o(m_RVALID_o),
-        .sa_RREADY_o(sa_RREADY_o),
-        .dsp_R_handshake_occur(dsp_R_handshake_occur)
+        .sa_RREADY_o(sa_RREADY_o)
     );
 
 endmodule
