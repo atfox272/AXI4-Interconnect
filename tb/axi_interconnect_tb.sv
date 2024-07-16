@@ -1,6 +1,27 @@
 `timescale 1ns / 1ps
-module axi_interconnect_tb;
-    // Interconnect configuration
+// Testbench configuration
+`define NUM_TRANS       7
+//`define DIRECTED_TEST   0   // Directed Test or Random Test
+// Ax channel
+`define AX_START_MODE   0
+`define AX_STALL_MODE   1
+`define AX_STOP_MODE    2
+// W channel
+`define W_START_MODE    10
+`define W_WLAST_MODE    11
+`define W_STALL_MODE    12
+`define W_STOP_MODE     13
+// B channel
+`define B_START_MODE    20
+`define B_STALL_MODE    22
+`define B_STOP_MODE     23
+// R channel
+`define R_START_MODE    30
+`define R_RLAST_MODE    31
+`define R_STALL_MODE    32
+`define R_STOP_MODE     33
+
+// Interconnect configuration
     parameter                       MST_AMT             = 4;
     parameter                       SLV_AMT             = 2;
     parameter                       OUTSTANDING_AMT     = 8;
@@ -21,6 +42,145 @@ module axi_interconnect_tb;
     parameter                       SLV_ID_LSB_IDX      = 30;
     // Dispatcher DATA depth configuration
     parameter                       DSP_RDATA_DEPTH     = 16;
+
+typedef struct {
+    int AxID;
+    int AxBURST;
+    int AxADDR_slv_id;
+    int AxADDR_addr;
+    int AxLEN;
+    int AxSIZE;
+} Ax_info;
+typedef struct {
+    int WDATA;
+    int WLAST;
+} W_info;
+
+typedef struct {
+    int BID;
+    int BRESP;
+} B_info;
+
+typedef struct {
+    int RID;
+    int RDATA;
+    int RLAST;
+} R_info;
+    
+
+class m_Ax_transfer_rnd #(int mode = `AX_START_MODE);
+        rand    bit [TRANS_MST_ID_W-1:0]        m_AxID;
+        rand    bit [TRANS_BURST_W-1:0]         m_AxBURST;
+        rand    bit [SLV_ID_W-1:0]              m_AxADDR_slv_id;
+        rand    bit [ADDR_WIDTH-SLV_ID_W-1:0]   m_AxADDR_addr;
+        rand    bit [TRANS_DATA_LEN_W-1:0]      m_AxLEN;
+        rand    bit [TRANS_DATA_SIZE_W-1:0]     m_AxSIZE;
+        rand    bit                             m_AxVALID;
+        constraint m_Ax_cntr{
+            if(mode == `AX_START_MODE) {
+                m_AxVALID == 1;
+            }
+            else if (mode == `AX_STOP_MODE) {
+                m_AxID == 0;
+                m_AxBURST == 0;
+                m_AxADDR_slv_id == 0;
+                m_AxADDR_addr == 0;
+                m_AxLEN == 0;
+                m_AxSIZE == 0;
+                m_AxVALID == 0;
+            }
+            else if (mode == `AX_STALL_MODE) {
+                m_AxVALID == 0;
+            }
+        }
+    endclass
+    
+class m_W_transfer_rnd #(int mode = `W_START_MODE);
+    rand    bit [DATA_WIDTH-1:0]    m_WDATA;
+    rand    bit                     m_WLAST;
+    rand    bit                     m_WVALID;
+    constraint m_W_cntr{
+        if(mode == `W_WLAST_MODE) {
+            m_WLAST == 1;
+            m_WVALID == 1;
+        }
+        else if (mode == `W_START_MODE){
+            m_WLAST == 0;
+            m_WVALID == 1;
+        }
+        else if (mode == `W_STOP_MODE) {
+            m_WDATA == 0;
+            m_WLAST == 0;
+            m_WVALID == 0;
+        }
+        else if (mode == `W_STALL_MODE) {
+            m_WVALID == 0;
+        }
+        else {
+            m_WDATA == 0;
+            m_WLAST == 0;
+            m_WVALID == 0;
+        }
+    }
+endclass
+    
+class s_B_transfer_rnd #(int mode = `B_START_MODE);
+    rand    bit [TRANS_SLV_ID_W-1:0]    s_BID;
+    rand    bit [TRANS_WR_RESP_W-1:0]   s_BRESP;
+    rand    bit                         s_BVALID;
+    constraint m_W_cntr{
+        if (mode == `B_START_MODE){
+            s_BVALID == 1;
+        }
+        else if (mode == `B_STOP_MODE) {
+            s_BID == 0;
+            s_BRESP == 0;
+            s_BVALID == 0;
+        }
+        else if (mode == `B_STALL_MODE) {
+            s_BVALID == 0;
+        }
+        else {
+            s_BID == 0;
+            s_BRESP == 0;
+            s_BVALID == 0;
+        }
+    }
+endclass
+
+class s_R_transfer_rnd #(int mode = `R_START_MODE);
+    rand    bit [TRANS_SLV_ID_W-1:0]    s_RID;
+    rand    bit [DATA_WIDTH-1:0]        s_RDATA;
+    rand    bit                         s_RLAST;
+    rand    bit                         s_RVALID;
+    constraint m_R_cntr{
+        if (mode == `B_START_MODE){
+            s_RLAST     == 0;
+            s_RVALID    == 1;
+        }
+        else if(mode == `R_RLAST_MODE) {
+            s_RLAST     == 1;
+            s_RVALID    == 1;
+        }
+        else if (mode == `B_STOP_MODE) {
+            s_RID       == 0;  
+            s_RDATA     == 0;
+            s_RLAST     == 0;
+            s_RVALID    == 0;
+        }
+        else if (mode == `B_STALL_MODE) {
+            s_RVALID    == 0;
+        }
+        else {
+            s_RID       == 0;  
+            s_RDATA     == 0;
+            s_RLAST     == 0;
+            s_RVALID    == 0;
+        }
+    }
+endclass
+
+module axi_interconnect_tb;
     
     // Input declaration
     // -- Global signals
@@ -63,6 +223,7 @@ module axi_interconnect_tb;
     // ---- Read data channel (master)
     wire    [TRANS_SLV_ID_W*SLV_AMT-1:0]    s_RID_i;
     wire    [DATA_WIDTH*SLV_AMT-1:0]        s_RDATA_i;
+    wire    [TRANS_WR_RESP_W*SLV_AMT-1:0]   s_RRESP_i;
     wire    [SLV_AMT-1:0]                   s_RLAST_i;
     wire    [SLV_AMT-1:0]                   s_RVALID_i;
     
@@ -81,6 +242,7 @@ module axi_interconnect_tb;
     // ---- Read data channel (master)
     wire    [TRANS_MST_ID_W*MST_AMT-1:0]    m_RID_o;
     wire    [DATA_WIDTH*MST_AMT-1:0]        m_RDATA_o;
+    wire    [TRANS_WR_RESP_W*MST_AMT-1:0]   m_RRESP_o;
     wire    [MST_AMT-1:0]                   m_RLAST_o;
     wire    [MST_AMT-1:0]                   m_RVALID_o;
     // -- To slave (master interface of the interconnect)
@@ -151,6 +313,7 @@ module axi_interconnect_tb;
     // -- -- -- Read data channel (master)
     wire    [TRANS_MST_ID_W-1:0]    m_RID       [MST_AMT-1:0];
     wire    [DATA_WIDTH-1:0]        m_RDATA     [MST_AMT-1:0];
+    wire    [TRANS_WR_RESP_W-1:0]   m_RRESP     [MST_AMT-1:0];
     wire                            m_RLAST     [MST_AMT-1:0];
     wire                            m_RVALID    [MST_AMT-1:0];
     // -- To Slave
@@ -168,6 +331,7 @@ module axi_interconnect_tb;
     // -- -- -- Read data channel (master)
     reg     [TRANS_SLV_ID_W-1:0]    s_RID       [SLV_AMT-1:0];
     reg     [DATA_WIDTH-1:0]        s_RDATA     [SLV_AMT-1:0];
+    reg     [TRANS_WR_RESP_W-1:0]   s_RRESP     [SLV_AMT-1:0];
     reg                             s_RLAST     [SLV_AMT-1:0];
     reg                             s_RVALID    [SLV_AMT-1:0];
     // -- -- Output
@@ -224,6 +388,7 @@ module axi_interconnect_tb;
             assign m_ARREADY[mst_idx]                                           =  m_ARREADY_o[mst_idx];
             assign m_RID[mst_idx]                                               =  m_RID_o[TRANS_MST_ID_W*(mst_idx+1)-1-:TRANS_MST_ID_W];   
             assign m_RDATA[mst_idx]                                             =  m_RDATA_o[DATA_WIDTH*(mst_idx+1)-1-:DATA_WIDTH]; 
+            assign m_RRESP[mst_idx]                                             =  m_RRESP_o[TRANS_WR_RESP_W*(mst_idx+1)-1-:TRANS_WR_RESP_W]; 
             assign m_RLAST[mst_idx]                                             =  m_RLAST_o[mst_idx]; 
             assign m_RVALID[mst_idx]                                            =  m_RVALID_o[mst_idx];
         end
@@ -238,6 +403,7 @@ module axi_interconnect_tb;
             assign s_ARREADY_i[slv_idx]                                         = s_ARREADY[slv_idx];
             assign s_RID_i[TRANS_SLV_ID_W*(slv_idx+1)-1-:TRANS_SLV_ID_W]        = s_RID[slv_idx];
             assign s_RDATA_i[DATA_WIDTH*(slv_idx+1)-1-:DATA_WIDTH]              = s_RDATA[slv_idx];
+            assign s_RRESP_i[TRANS_WR_RESP_W*(slv_idx+1)-1-:TRANS_WR_RESP_W]    = s_RRESP[slv_idx];
             assign s_RLAST_i[slv_idx]                                           = s_RLAST[slv_idx];
             assign s_RVALID_i[slv_idx]                                          = s_RVALID[slv_idx];
             // -- -- Output
@@ -260,6 +426,15 @@ module axi_interconnect_tb;
             assign s_RREADY[slv_idx]                                            = s_RREADY_o[slv_idx];
         end
     endgenerate
+    
+    // Testcase generator
+    // -- Master
+    m_Ax_transfer_rnd   #(`AX_START_MODE)   m_AW_rnd;
+    m_W_transfer_rnd    #(`W_START_MODE)    m_W_rnd;
+    m_Ax_transfer_rnd   #(`AX_START_MODE)   m_AR_rnd;
+    // -- Slave
+    s_B_transfer_rnd    #(`B_START_MODE)    s_B_rnd;
+    s_R_transfer_rnd    #(`R_START_MODE)    s_R_rnd;
     
     axi_interconnect #(
         .MST_AMT(MST_AMT),
@@ -307,6 +482,7 @@ module axi_interconnect_tb;
         .s_ARREADY_i(s_ARREADY_i),
         .s_RID_i(s_RID_i),
         .s_RDATA_i(s_RDATA_i),
+        .s_RRESP_i(s_RRESP_i),
         .s_RLAST_i(s_RLAST_i),
         .s_RVALID_i(s_RVALID_i),
         .m_AWREADY_o(m_AWREADY_o),
@@ -317,6 +493,7 @@ module axi_interconnect_tb;
         .m_ARREADY_o(m_ARREADY_o),
         .m_RID_o(m_RID_o),
         .m_RDATA_o(m_RDATA_o),
+        .m_RRESP_o(m_RRESP_o),
         .m_RLAST_o(m_RLAST_o),
         .m_RVALID_o(m_RVALID_o),
         .s_AWID_o(s_AWID_o),
@@ -351,43 +528,190 @@ module axi_interconnect_tb;
         #5; ARESETn_i <= 1;
     end
     
-    initial begin localparam mst_idx = 0;
+    // Queue declaration
+    Ax_info AW_queue[MST_AMT][$];
+    W_info  W_queue [MST_AMT][$];
+    Ax_info AR_queue[MST_AMT][$];
+    
+    /********************** Directed test ***************************/
+    `ifdef DIRECTED_TEST
+    initial begin : MASTER_0_AR_channel
+        localparam mst_idx = 0;
         #6; 
         
-        m_AR_transfer(.mst_id(mst_idx), .ARID(1), .ARADDR({2'b00, 30'd01}), .ARBURST(0), .ARLEN(0), .ARSIZE(0));
+        m_AR_transfer(.mst_id(mst_idx), .ARID(1), .ARADDR({2'b00, 30'd01}), .ARBURST(0), .ARLEN(3), .ARSIZE(0));
         m_AR_transfer(.mst_id(mst_idx), .ARID(2), .ARADDR({2'b00, 30'd02}), .ARBURST(0), .ARLEN(0), .ARSIZE(0));
         m_AR_transfer(.mst_id(mst_idx), .ARID(3), .ARADDR({2'b00, 30'd03}), .ARBURST(0), .ARLEN(0), .ARSIZE(0));
         m_AR_transfer(.mst_id(mst_idx), .ARID(4), .ARADDR({2'b00, 30'd04}), .ARBURST(0), .ARLEN(0), .ARSIZE(0));
         
+        // 4KB Crossing transaction
+        m_AR_transfer(.mst_id(mst_idx), .ARID(4), .ARADDR({2'b01, 30'd4094}), .ARBURST(0), .ARLEN(4), .ARSIZE(0));
+        // End
         @(posedge ACLK_i); #0.01;
         m_ARVALID[mst_idx]  <= 0;
     end
-    
-    initial begin localparam mst_idx = 1;
+    initial begin : MASTER_1_AR_channel
+        localparam mst_idx = 1;
         #6; 
         
         m_AR_transfer(.mst_id(mst_idx), .ARID(1), .ARADDR({2'b00, 30'd01}), .ARBURST(0), .ARLEN(0), .ARSIZE(0));
         m_AR_transfer(.mst_id(mst_idx), .ARID(2), .ARADDR({2'b01, 30'd02}), .ARBURST(0), .ARLEN(0), .ARSIZE(0));
         m_AR_transfer(.mst_id(mst_idx), .ARID(3), .ARADDR({2'b00, 30'd03}), .ARBURST(0), .ARLEN(0), .ARSIZE(0));
         m_AR_transfer(.mst_id(mst_idx), .ARID(4), .ARADDR({2'b01, 30'd04}), .ARBURST(0), .ARLEN(0), .ARSIZE(0));
-        
+        // End
         @(posedge ACLK_i); #0.01;
         m_ARVALID[mst_idx]  <= 0;
     end
-    
-    
-    initial begin localparam mst_idx = 2;
+    initial begin : MASTER_2_AR_channel
+        localparam mst_idx = 2;
         #6; 
         
         m_AR_transfer(.mst_id(mst_idx), .ARID(1), .ARADDR({2'b01, 30'd01}), .ARBURST(0), .ARLEN(0), .ARSIZE(0));
         m_AR_transfer(.mst_id(mst_idx), .ARID(2), .ARADDR({2'b01, 30'd02}), .ARBURST(0), .ARLEN(0), .ARSIZE(0));
-        
+        // End
         @(posedge ACLK_i); #0.01;
         m_ARVALID[mst_idx]  <= 0;
     end
+    initial begin : SLAVE_0_R_channel 
+        localparam slv_idx = 0;
+        #6; 
+        // 1st read request
+        s_R_transfer(.slv_id(slv_idx), .RID(1), .RDATA(10), .RLAST(0));
+        s_R_transfer(.slv_id(slv_idx), .RID(1), .RDATA(20), .RLAST(0));
+        s_R_transfer(.slv_id(slv_idx), .RID(1), .RDATA(30), .RLAST(0));
+        s_R_transfer(.slv_id(slv_idx), .RID(1), .RDATA(40), .RLAST(1));
+        // 2nd read request
+        s_R_transfer(.slv_id(slv_idx), .RID(33), .RDATA(50), .RLAST(1));
+        // 3rd read request
+        s_R_transfer(.slv_id(slv_idx), .RID(2), .RDATA(60), .RLAST(1));
+        // 4th read request
+        s_R_transfer(.slv_id(slv_idx), .RID(35), .RDATA(70), .RLAST(1));
+        // 5th read request
+        s_R_transfer(.slv_id(slv_idx), .RID(3), .RDATA(80), .RLAST(1));
+        // 6th read request
+        s_R_transfer(.slv_id(slv_idx), .RID(4), .RDATA(90), .RLAST(1));
+        // 7th
+        s_R_transfer(.slv_id(slv_idx), .RID(64), .RDATA(100), .RLAST(1));
+        
+        @(posedge ACLK_i); #0.01;
+        s_RVALID[slv_idx]  <= 0;
+    end 
+    initial begin : SLAVE_1_R_channel 
+        localparam slv_idx = 1;
+        #12; 
+        // 1st read request
+        s_R_transfer(.slv_id(slv_idx), .RID(65), .RDATA(110), .RLAST(1));
+        // 2nd read request
+        s_R_transfer(.slv_id(slv_idx), .RID(34), .RDATA(120), .RLAST(1));
+        // 3rd read request
+        s_R_transfer(.slv_id(slv_idx), .RID(66), .RDATA(130), .RLAST(1));
+        // 4th read request
+        s_R_transfer(.slv_id(slv_idx), .RID(36), .RDATA(140), .RLAST(1));
+        // 5th read request
+        s_R_transfer(.slv_id(slv_idx), .RID(4), .RDATA(200), .RLAST(0));
+        s_R_transfer(.slv_id(slv_idx), .RID(4), .RDATA(210), .RLAST(1));
+        // 6th read request
+        s_R_transfer(.slv_id(slv_idx), .RID(4), .RDATA(220), .RLAST(0));
+        s_R_transfer(.slv_id(slv_idx), .RID(4), .RDATA(230), .RLAST(0));
+        s_R_transfer(.slv_id(slv_idx), .RID(4), .RDATA(240), .RLAST(1));
+        
+        @(posedge ACLK_i); #0.01;
+        s_RVALID[slv_idx]  <= 0;
+    end
+    
+    initial begin : MASTER_0_AW_channel
+        localparam mst_idx = 0;
+        #6; 
+        // 4KB Crossing transaction
+        m_AW_transfer(.mst_id(mst_idx), .AWID(1), .AWADDR({2'b00, 30'd4094}), .AWBURST(0), .AWLEN(4), .AWSIZE(0));
+        // End
+        @(posedge ACLK_i); #0.01;
+        m_AWVALID[mst_idx]  <= 0;
+    end
+    initial begin : MASTER_1_AW_channel
+        localparam mst_idx = 1;
+        #6; 
+        // 4KB Crossing transaction
+        m_AW_transfer(.mst_id(mst_idx), .AWID(2), .AWADDR({2'b00, 30'd2}), .AWBURST(0), .AWLEN(0), .AWSIZE(0));
+        // End
+        @(posedge ACLK_i); #0.01;
+        m_AWVALID[mst_idx]  <= 0;
+    end
+    initial begin : MASTER_2_AW_channel
+        localparam mst_idx = 2;
+        #6; 
+        // 4KB Crossing transaction
+        m_AW_transfer(.mst_id(mst_idx), .AWID(2), .AWADDR({2'b00, 30'd3}), .AWBURST(0), .AWLEN(1), .AWSIZE(0));
+        // End
+        @(posedge ACLK_i); #0.01;
+        m_AWVALID[mst_idx]  <= 0;
+    end
+    initial begin : MASTER_0_W_channel
+        localparam mst_idx = 0;
+        #12; 
+        // 4KB Crossing transaction
+        m_W_transfer(.mst_id(mst_idx), .WDATA(30), .WLAST(0));
+        m_W_transfer(.mst_id(mst_idx), .WDATA(40), .WLAST(0));
+        m_W_transfer(.mst_id(mst_idx), .WDATA(50), .WLAST(0));
+        m_W_transfer(.mst_id(mst_idx), .WDATA(60), .WLAST(0));
+        m_W_transfer(.mst_id(mst_idx), .WDATA(70), .WLAST(1));
+        // End
+        @(posedge ACLK_i); #0.01;
+        m_WVALID[mst_idx]  <= 0;
+    end
+    initial begin : MASTER_1_W_channel
+        localparam mst_idx = 1;
+        #12; 
+        m_W_transfer(.mst_id(mst_idx), .WDATA(11), .WLAST(1));
+        // End
+        @(posedge ACLK_i); #0.01;
+        m_WVALID[mst_idx]  <= 0;
+    end
+    initial begin : MASTER_2_W_channel
+        localparam mst_idx = 2;
+        #12; 
+        m_W_transfer(.mst_id(mst_idx), .WDATA(21), .WLAST(0));
+        m_W_transfer(.mst_id(mst_idx), .WDATA(22), .WLAST(1));
+        // End
+        @(posedge ACLK_i); #0.01;
+        m_WVALID[mst_idx]  <= 0;
+    end
+    initial begin : SLAVE_0_W_channel
+        localparam slv_idx = 0;
+        #14; 
+        s_B_transfer(.slv_id(slv_idx), .BID(1), .BRESP(0));
+        s_B_transfer(.slv_id(slv_idx), .BID(34), .BRESP(0));
+        s_B_transfer(.slv_id(slv_idx), .BID(66), .BRESP(0));
+        s_B_transfer(.slv_id(slv_idx), .BID(1), .BRESP(0));
+        // End
+        @(posedge ACLK_i); #0.01;
+        s_BVALID[slv_idx]  <= 0;
+    end
+    /********************** Directed test ***************************/
+    `else
+    initial begin   : MASTER_DRIVER_0
+        localparam mst_id = 0;
+        #10;
+        master_driver(mst_id);
+    end
+//    initial begin   : MASTER_DRIVER_1
+//        localparam mst_id = 1;
+//        #10;
+//        master_driver(mst_id);
+//    end
+//    initial begin   : MASTER_DRIVER_2
+//        localparam mst_id = 2;
+//        #10;
+//        master_driver(mst_id);
+//    end
+//    initial begin   : MASTER_DRIVER_3
+//        localparam mst_id = 3;
+//        #10;
+//        master_driver(mst_id);
+//    end
     
     
-    
+    `endif
     
     
     
@@ -406,6 +730,8 @@ module axi_interconnect_tb;
     
     
     // ------- DeepCode :v ------------
+    
+    
     int idx = 0;
     initial begin : INIT_VALUE_BLOCK
         for(idx = 0; idx < MST_AMT; idx = idx + 1) begin
@@ -442,6 +768,96 @@ module axi_interconnect_tb;
             s_RVALID[idx]   <= 0;
         end
     end
+   
+    task automatic master_driver (input int mst_id);
+        int AW_started;
+        int AW_completed;
+        
+        m_AW_rnd    = new();
+        m_W_rnd     = new();
+        m_AR_rnd    = new();
+//        assert(m_AW_rnd.randomize()) else $error("AR channel randomization failed");
+//        assert(m_W_rnd.randomize()) else $error("W channel randomization failed");
+//        assert(m_AR_rnd.randomize()) else $error("AR channel randomization failed");
+
+        fork
+            begin   : AW_channel
+                Ax_info temp;
+                for(int i = 0; i < `NUM_TRANS; i = i + 1) begin
+                    // Randomize
+                    assert(m_AW_rnd.randomize()) else $error("AR channel randomization failed");
+                    // Start a AW transfer
+                    m_AW_transfer(  .mst_id(mst_id),
+                                    .AWID(i%OUTSTANDING_AMT),  
+                                    .AWADDR({m_AW_rnd.m_AxADDR_slv_id, m_AW_rnd.m_AxADDR_addr}),
+                                    .AWBURST(m_AW_rnd.m_AxBURST),
+                                    .AWLEN(m_AW_rnd.m_AxLEN),
+                                    .AWSIZE(m_AW_rnd.m_AxSIZE)
+                                 );
+                    // Wait for AWREADY                            
+                    wait(m_AWREADY[mst_id] == 1);
+                    // Push ADDR info to queue
+                    temp.AxID           = i%OUTSTANDING_AMT;
+                    temp.AxBURST        = m_AW_rnd.m_AxBURST;
+                    temp.AxADDR_slv_id  = m_AW_rnd.m_AxADDR_slv_id;
+                    temp.AxADDR_addr    = m_AW_rnd.m_AxADDR_addr;
+                    temp.AxLEN          = m_AW_rnd.m_AxLEN;
+                    temp.AxSIZE         = m_AW_rnd.m_AxSIZE;
+                    AW_queue[mst_id].push_back(temp);
+                    $display("INFO: Send AW transfer from Master %d with AWID:%d and AWADDR:(%d, %d) and AWLEN: %d", mst_id, temp.AxID, temp.AxADDR_slv_id, temp.AxADDR_addr, temp.AxLEN);
+                    AW_started = 1;
+                end
+                cl;
+                m_AWVALID[mst_id] <= 0;
+                AW_completed = 1;
+            end
+            begin   : W_channel
+                Ax_info temp;
+                int WLAST_nxt;
+                // Start W channel after the first AW transfer completed
+                wait(AW_started == 1);
+                for(int trans_ctn = 0; trans_ctn < `NUM_TRANS;) begin 
+                    if(AW_queue[mst_id].size() > 0) begin
+                        temp = AW_queue[mst_id].pop_back();
+                        for(int i = 0; i <= temp.AxLEN; i = i + 1) begin
+                            WLAST_nxt = i == temp.AxLEN;
+                            // Randomize
+                            assert(m_W_rnd.randomize()) else $error("W channel randomization failed"); 
+                            // Start a W transfer
+                            m_W_transfer(   .mst_id(mst_id),
+                                            .WDATA(m_W_rnd.m_WDATA),
+                                            .WLAST(WLAST_nxt));        
+                            wait(m_WREADY[mst_id] == 1);
+                            // Push ADDR info to queue
+                            $display("INFO: Send a W transfer from Master %d with WDATA: %d and WLAST: %d", mst_id, m_W_rnd.m_WDATA, WLAST_nxt);
+                        end
+                        $display("INFO: W channel completed: %d", trans_ctn);
+                        trans_ctn = trans_ctn + 1;
+                    end 
+                    else begin
+                        cl;
+                        m_WVALID[mst_id] <= 0;
+                    end
+                end
+            end
+            begin   : B_channel
+            
+            end
+            begin   : AR_channel
+                for(int i = 0; i < `NUM_TRANS; i = i + 1) begin
+                    assert(m_AR_rnd.randomize()) else $error("AR channel randomization failed");
+                end
+            end
+            begin   : R_channel
+            
+            end 
+        join
+    endtask 
+   
+   
+    task automatic cl;
+        @(posedge ACLK_i); #0.01;
+    endtask
     
     task automatic m_AR_transfer(
         input [MST_ID_W-1:0]            mst_id,
@@ -451,7 +867,7 @@ module axi_interconnect_tb;
         input [TRANS_DATA_LEN_W-1:0]    ARLEN,
         input [TRANS_DATA_SIZE_W-1:0]   ARSIZE
     );
-        @(posedge ACLK_i); #0.01;
+        cl;
         m_ARID[mst_id]     <= ARID;
         m_ARADDR[mst_id]   <= ARADDR;
         m_ARBURST[mst_id]  <= ARBURST;
@@ -468,7 +884,7 @@ module axi_interconnect_tb;
         input [TRANS_DATA_LEN_W-1:0]    AWLEN,
         input [TRANS_DATA_SIZE_W-1:0]   AWSIZE
     );
-        @(posedge ACLK_i); #0.01;
+        cl;
         m_AWID[mst_id]     <= AWID;
         m_AWADDR[mst_id]   <= AWADDR;
         m_AWBURST[mst_id]  <= AWBURST;
@@ -479,32 +895,26 @@ module axi_interconnect_tb;
     
     task automatic m_W_transfer (
         input [MST_ID_W-1:0]            mst_id,
-        input [TRANS_DATA_LEN_W-1:0]    burst_len,
         input [DATA_WIDTH-1:0]          WDATA,
         input                           WLAST
     );
-        repeat(burst_len) begin
-            @(posedge ACLK_i); #0.01;
-            m_WDATA[mst_id]     <= WDATA;
-            m_WLAST[mst_id]     <= WLAST;
-            m_WVALID[mst_id]    <= 1'b1;
-        end
+        cl;
+        m_WDATA[mst_id]     <= WDATA;
+        m_WLAST[mst_id]     <= WLAST;
+        m_WVALID[mst_id]    <= 1'b1;
     endtask
     
     task automatic s_R_transfer (
         input [SLV_ID_W-1:0]            slv_id,
-        input [TRANS_DATA_LEN_W-1:0]    burst_len,
         input [TRANS_SLV_ID_W-1:0]      RID, 
         input [DATA_WIDTH-1:0]          RDATA,
         input                           RLAST
     );
-        repeat(burst_len) begin
-            @(posedge ACLK_i); #0.01;
-            s_RID[slv_id]       <= RID;
-            s_RDATA[slv_id]     <= RDATA;
-            s_RLAST[slv_id]     <= RLAST;
-            s_RVALID[slv_id]    <= 1'b1;
-        end
+        cl;
+        s_RID[slv_id]       <= RID;
+        s_RDATA[slv_id]     <= RDATA;
+        s_RLAST[slv_id]     <= RLAST;
+        s_RVALID[slv_id]    <= 1'b1;
     endtask
     
     task automatic s_B_transfer (
@@ -512,10 +922,16 @@ module axi_interconnect_tb;
         input [TRANS_SLV_ID_W-1:0]  BID,
         input [TRANS_WR_RESP_W-1:0] BRESP
     );
-        @(posedge ACLK_i); #0.01;
+        cl;
         s_BID[slv_id]       <= BID;
         s_BRESP[slv_id]     <= BRESP;
         s_BVALID[slv_id]    <= 1'b1;
     endtask
     
 endmodule
+
+
+
+
+
+

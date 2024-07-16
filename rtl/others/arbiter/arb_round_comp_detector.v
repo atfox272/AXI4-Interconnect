@@ -8,7 +8,6 @@ module arb_round_comp_detector
     input   [0:P_REQUESTER_NUM*P_WEIGHT_W - 1]  req_weight_i,
     input   [P_REQUESTER_NUM - 1:0]             req_weight_remain_i,
     input   [P_REQUESTER_NUM - 1:0]             grant_i,
-    input   [P_WEIGHT_W - 1:0]                  num_grant_req_i,
     // Output declaration
     output                                      round_comp_o
 );

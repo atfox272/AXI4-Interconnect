@@ -12,12 +12,11 @@ module fifo
     
     input                       wr_valid_i,
     input                       rd_valid_i,
-   
+    
     output                      empty_o,
     output                      full_o,
     output                      almost_empty_o,
     output                      almost_full_o,
-   
     input                       rst_n
     );
     // Localparam declaration
@@ -32,7 +31,6 @@ module fifo
     wire[ADDR_WIDTH - 1:0]  wr_addr_map;
     wire[ADDR_WIDTH:0]      rd_addr_inc;
     wire[ADDR_WIDTH - 1:0]  rd_addr_map;
-    wire[ADDR_WIDTH:0]      counter;
     wire[DATA_WIDTH - 1:0]  buffer_nxt [0:FIFO_DEPTH - 1];
     // reg declaration
 	reg [DATA_WIDTH - 1:0]  buffer     [0:FIFO_DEPTH - 1];
@@ -52,7 +50,6 @@ module fifo
     assign full_o = (wr_addr_map == rd_addr_map) & (wr_addr[ADDR_WIDTH] ^ rd_addr[ADDR_WIDTH]);
     assign almost_full_o = wr_addr_map + 1'b1 == rd_addr_map;
     
-    assign counter = wr_addr - rd_addr;
     generate
         for(addr = 0; addr < FIFO_DEPTH; addr = addr + 1) begin
             assign buffer_nxt[addr] = (wr_addr_map == addr) ? data_i : buffer[addr];

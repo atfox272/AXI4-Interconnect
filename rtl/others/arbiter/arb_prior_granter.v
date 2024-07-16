@@ -33,8 +33,7 @@ module arb_prior_granter
             assign higher_prior_grant[P_HIGHEST_PRIOR_IDX] = 1'b0 | 1'b0;
         end
         else begin
-            integer higher_prior_idx = (i - 1 < 0) ? P_REQUESTER_NUM - 1 : i - 1;
-            assign higher_prior_grant[i] = request_active[higher_prior_idx] | higher_prior_grant[higher_prior_idx];
+            assign higher_prior_grant[i] = request_active[(i - 1 < 0) ? P_REQUESTER_NUM - 1 : i - 1] | higher_prior_grant[(i - 1 < 0) ? P_REQUESTER_NUM - 1 : i - 1];
         end 
         assign prior_grant[i] = request_filtered[i];
     end

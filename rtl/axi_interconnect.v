@@ -64,6 +64,7 @@ module axi_interconnect
     // ---- Read data channel (master)
     input   [TRANS_SLV_ID_W*SLV_AMT-1:0]    s_RID_i,
     input   [DATA_WIDTH*SLV_AMT-1:0]        s_RDATA_i,
+    input   [TRANS_WR_RESP_W*SLV_AMT-1:0]   s_RRESP_i,
     input   [SLV_AMT-1:0]                   s_RLAST_i,
     input   [SLV_AMT-1:0]                   s_RVALID_i,
     
@@ -82,6 +83,7 @@ module axi_interconnect
     // ---- Read data channel (master)
     output  [TRANS_MST_ID_W*MST_AMT-1:0]    m_RID_o,
     output  [DATA_WIDTH*MST_AMT-1:0]        m_RDATA_o,
+    output  [TRANS_WR_RESP_W*MST_AMT-1:0]   m_RRESP_o,
     output  [MST_AMT-1:0]                   m_RLAST_o,
     output  [MST_AMT-1:0]                   m_RVALID_o,
     // -- To slave (master interface of the interconnect)
@@ -154,6 +156,7 @@ module axi_interconnect
     // -- -- -- Read data channel (master)
     wire    [TRANS_MST_ID_W-1:0]    m_RID       [MST_AMT-1:0];
     wire    [DATA_WIDTH-1:0]        m_RDATA     [MST_AMT-1:0];
+    wire    [TRANS_WR_RESP_W-1:0]   m_RRESP     [MST_AMT-1:0];
     wire                            m_RLAST     [MST_AMT-1:0];
     wire                            m_RVALID    [MST_AMT-1:0];
     // -- To Slave
@@ -171,6 +174,7 @@ module axi_interconnect
     // -- -- -- Read data channel (master)
     wire    [TRANS_SLV_ID_W-1:0]    s_RID       [SLV_AMT-1:0];
     wire    [DATA_WIDTH-1:0]        s_RDATA     [SLV_AMT-1:0];
+    wire    [TRANS_WR_RESP_W-1:0]   s_RRESP     [SLV_AMT-1:0];
     wire                            s_RLAST     [SLV_AMT-1:0];
     wire                            s_RVALID    [SLV_AMT-1:0];
     // -- -- Output
@@ -211,6 +215,7 @@ module axi_interconnect
     // -- -- -- Read data channel (master)     
     wire    [TRANS_MST_ID_W*SLV_AMT-1:0]    dsp_sa_RID_i            [MST_AMT-1:0];
     wire    [DATA_WIDTH*SLV_AMT-1:0]        dsp_sa_RDATA_i          [MST_AMT-1:0];
+    wire    [TRANS_WR_RESP_W*SLV_AMT-1:0]   dsp_sa_RRESP_i          [MST_AMT-1:0];
     wire    [SLV_AMT-1:0]                   dsp_sa_RLAST_i          [MST_AMT-1:0];
     wire    [SLV_AMT-1:0]                   dsp_sa_RVALID_i         [MST_AMT-1:0];
     // -- -- Output
@@ -280,6 +285,7 @@ module axi_interconnect
     // -- -- -- Read data channel (master)      
     wire    [TRANS_MST_ID_W*MST_AMT-1:0]    sa_dsp_RID_o            [SLV_AMT-1:0];
     wire    [DATA_WIDTH*MST_AMT-1:0]        sa_dsp_RDATA_o          [SLV_AMT-1:0];
+    wire    [TRANS_WR_RESP_W*MST_AMT-1:0]   sa_dsp_RRESP_o          [SLV_AMT-1:0];
     wire    [MST_AMT-1:0]                   sa_dsp_RLAST_o          [SLV_AMT-1:0];
     wire    [MST_AMT-1:0]                   sa_dsp_RVALID_o         [SLV_AMT-1:0];
     
@@ -328,6 +334,7 @@ module axi_interconnect
             // -- -- -- Output
             assign m_RID_o[TRANS_MST_ID_W*(mst_idx+1)-1-:TRANS_MST_ID_W]    = m_RID[mst_idx];
             assign m_RDATA_o[DATA_WIDTH*(mst_idx+1)-1-:DATA_WIDTH]          = m_RDATA[mst_idx];
+            assign m_RRESP_o[TRANS_WR_RESP_W*(mst_idx+1)-1-:TRANS_WR_RESP_W]= m_RRESP[mst_idx];
             assign m_RLAST_o[mst_idx]                                       = m_RLAST[mst_idx];
             assign m_RVALID_o[mst_idx]                                      = m_RVALID[mst_idx];
         end
@@ -371,6 +378,7 @@ module axi_interconnect
             // -- -- -- Input
             assign s_RID[slv_idx]                                                   = s_RID_i[TRANS_SLV_ID_W*(slv_idx+1)-1-:TRANS_SLV_ID_W];
             assign s_RDATA[slv_idx]                                                 = s_RDATA_i[DATA_WIDTH*(slv_idx+1)-1-:DATA_WIDTH];
+            assign s_RRESP[slv_idx]                                                 = s_RRESP_i[TRANS_WR_RESP_W*(slv_idx+1)-1-:TRANS_WR_RESP_W];
             assign s_RLAST[slv_idx]                                                 = s_RLAST_i[slv_idx];
             assign s_RVALID[slv_idx]                                                = s_RVALID_i[slv_idx];
             // -- -- -- Output
@@ -388,6 +396,7 @@ module axi_interconnect
             assign dsp_sa_ARREADY_i[mst_idx][slv_idx]                                           = sa_dsp_ARREADY_o[slv_idx][mst_idx];
             assign dsp_sa_RID_i[mst_idx][TRANS_MST_ID_W*(slv_idx+1)-1-:TRANS_MST_ID_W]          = sa_dsp_RID_o[slv_idx][TRANS_MST_ID_W*(mst_idx+1)-1-:TRANS_MST_ID_W];
             assign dsp_sa_RDATA_i[mst_idx][DATA_WIDTH*(slv_idx+1)-1-:DATA_WIDTH]                = sa_dsp_RDATA_o[slv_idx][DATA_WIDTH*(mst_idx+1)-1-:DATA_WIDTH];
+            assign dsp_sa_RRESP_i[mst_idx][TRANS_WR_RESP_W*(slv_idx+1)-1-:TRANS_WR_RESP_W]      = sa_dsp_RRESP_o[slv_idx][TRANS_WR_RESP_W*(mst_idx+1)-1-:TRANS_WR_RESP_W];
             assign dsp_sa_RLAST_i[mst_idx][slv_idx]                                             = sa_dsp_RLAST_o[slv_idx][mst_idx];
             assign dsp_sa_RVALID_i[mst_idx][slv_idx]                                            = sa_dsp_RVALID_o[slv_idx][mst_idx];
             // -- -- Dispatcher to Slave Arbitration

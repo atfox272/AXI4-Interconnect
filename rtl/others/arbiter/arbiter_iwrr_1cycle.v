@@ -1,11 +1,11 @@
 module arbiter_iwrr_1cycle
 #(
     // Requester number
-    parameter                               P_REQUESTER_NUM     = 3,       
+    parameter                               P_REQUESTER_NUM     = 4,       
     // Weight value of each requester (requester_weight[0] = max_weight)
-    parameter   [0:(P_REQUESTER_NUM*32)-1]  P_REQUESTER_WEIGHT  = {32'd5, 32'd3, 32'd2},
+    parameter   [0:(P_REQUESTER_NUM*32)-1]  P_REQUESTER_WEIGHT  = {32'd5, 32'd3, 32'd2, 32'd1},
     parameter                               P_WEIGHT_W          = $clog2(P_REQUESTER_WEIGHT[0*32+:32]),
-    parameter                               P_NUM_GRANT_REQ_W   = 4    // Max number of requested grant is 2**P_NUM_GRANT_REQ_W
+    parameter                               P_NUM_GRANT_REQ_W   = 3    // Max number of requested grant is 2**P_NUM_GRANT_REQ_W
 )
 (   
     // Input declaration
@@ -60,7 +60,6 @@ module arbiter_iwrr_1cycle
         .req_weight_i(req_weight_r),
         .req_weight_remain_i(req_weight_remain),
         .grant_i(grant_valid_o),
-        .num_grant_req_i(num_grant_req_i),
         // Output
         .round_comp_o(round_comp)
     );
