@@ -42,7 +42,7 @@ module arbiter_iwrr_1cycle
     
     // combinational logic
     generate
-        for(genvar i = 0; i < P_REQUESTER_NUM; i = i + 1) begin
+        for(i = 0; i < P_REQUESTER_NUM; i = i + 1) begin
             arb_prior_granter #(
                 .P_REQUESTER_NUM(P_REQUESTER_NUM),
                 .P_HIGHEST_PRIOR_IDX(i)
