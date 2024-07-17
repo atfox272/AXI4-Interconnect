@@ -11,7 +11,10 @@ module arb_round_comp_detector
     // Output declaration
     output                                      round_comp_o
 );
-
+    // Internal variable
+    genvar i;
+    genvar n;
+    
     // Internal signal declaration
     // wire declaration
     wire    [P_REQUESTER_NUM - 1:0] req_weight_mask     [P_REQUESTER_NUM - 1:0];
@@ -21,8 +24,8 @@ module arb_round_comp_detector
     
     // combinational logic
     generate
-        for(genvar i = 0; i < P_REQUESTER_NUM; i = i + 1) begin
-            for(genvar n = 0; n < P_REQUESTER_NUM; n = n + 1) begin
+        for(i = 0; i < P_REQUESTER_NUM; i = i + 1) begin
+            for(n = 0; n < P_REQUESTER_NUM; n = n + 1) begin
                 if(i == n) begin
                     assign req_weight_mask[i][n] = ~(req_weight_i[((n+1)*P_WEIGHT_W-1)-:P_WEIGHT_W] == 0);
                 end

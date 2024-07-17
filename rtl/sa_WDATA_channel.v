@@ -137,7 +137,7 @@ module sa_WDATA_channel
         .rst_n(ARESETn_i)
     );
     generate
-        for(genvar mst_idx = 0; mst_idx < MST_AMT; mst_idx = mst_idx + 1) begin
+        for(mst_idx = 0; mst_idx < MST_AMT; mst_idx = mst_idx + 1) begin
             fifo 
             #(
                 .DATA_WIDTH(DATA_INFO_W),

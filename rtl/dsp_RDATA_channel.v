@@ -5,6 +5,7 @@ module dsp_RDATA_channel
     // Transaction configuration
     parameter DATA_WIDTH        = 32,
     parameter TRANS_MST_ID_W    = 5,    // Bus width of master transaction ID 
+    parameter TRANS_WR_RESP_W   = 2,
     // Slave configuration
     parameter SLV_ID_W          = $clog2(SLV_AMT),
     // Dispatcher DATA depth configuration
@@ -22,6 +23,7 @@ module dsp_RDATA_channel
     // ---- Read data channel (master)
     input   [TRANS_MST_ID_W*SLV_AMT-1:0]    sa_RID_i,
     input   [DATA_WIDTH*SLV_AMT-1:0]        sa_RDATA_i,
+    input   [TRANS_WR_RESP_W*SLV_AMT-1:0]   sa_RRESP_i,
     input   [SLV_AMT-1:0]                   sa_RLAST_i,
     input   [SLV_AMT-1:0]                   sa_RVALID_i,
     // -- To AR channel Dispatcher
@@ -32,6 +34,7 @@ module dsp_RDATA_channel
     // ---- Read data channel (master)
     output  [TRANS_MST_ID_W-1:0]            m_RID_o,
     output  [DATA_WIDTH-1:0]                m_RDATA_o,
+    output  [TRANS_WR_RESP_W-1:0]           m_RRESP_o,
     output                                  m_RLAST_o,
     output                                  m_RVALID_o,
     // -- To Slave Arbitration
@@ -39,7 +42,7 @@ module dsp_RDATA_channel
     output  [SLV_AMT-1:0]                   sa_RREADY_o
 );
     // Local parameter 
-    localparam DATA_INFO_W = TRANS_MST_ID_W + DATA_WIDTH + 1;   // RID_W + DATA_W + RLAST_W
+    localparam DATA_INFO_W = TRANS_MST_ID_W + DATA_WIDTH + TRANS_WR_RESP_W + 1;   // RID_W + DATA_W + RRESP + RLAST_W
 
     // Internal variable declaration
     genvar slv_idx;
@@ -58,6 +61,7 @@ module dsp_RDATA_channel
     // -- Misc
     wire   [TRANS_MST_ID_W-1:0] sa_RID_valid        [SLV_AMT-1:0];
     wire   [DATA_WIDTH-1:0]     sa_RDATA_valid      [SLV_AMT-1:0];
+    wire   [TRANS_WR_RESP_W-1:0]sa_RRESP_valid      [SLV_AMT-1:0];
     wire                        sa_RLAST_valid      [SLV_AMT-1:0];
     
     // Module
@@ -86,8 +90,8 @@ module dsp_RDATA_channel
     // -- RDATA FIFO
     generate
         for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin
-            assign data_info[slv_idx] = {sa_RID_i[TRANS_MST_ID_W*(slv_idx+1)-1-:TRANS_MST_ID_W], sa_RDATA_i[DATA_WIDTH*(slv_idx+1)-1-:DATA_WIDTH], sa_RLAST_i[slv_idx]};
-            assign {sa_RID_valid[slv_idx], sa_RDATA_valid[slv_idx], sa_RLAST_valid[slv_idx]} = data_info_valid[slv_idx];
+            assign data_info[slv_idx] = {sa_RID_i[TRANS_MST_ID_W*(slv_idx+1)-1-:TRANS_MST_ID_W], sa_RDATA_i[DATA_WIDTH*(slv_idx+1)-1-:DATA_WIDTH], sa_RRESP_i[TRANS_WR_RESP_W*(slv_idx+1)-1-:TRANS_WR_RESP_W], sa_RLAST_i[slv_idx]};
+            assign {sa_RID_valid[slv_idx], sa_RDATA_valid[slv_idx], sa_RRESP_valid[slv_idx], sa_RLAST_valid[slv_idx]} = data_info_valid[slv_idx];
             assign fifo_rdata_wr_en[slv_idx] = sa_handshake_occur[slv_idx];
             assign fifo_rdata_rd_en[slv_idx] = m_handshake_occur & (dsp_AR_slv_id_i == slv_idx);
         end
@@ -103,6 +107,7 @@ module dsp_RDATA_channel
     // -- -- Output to Master
     assign m_RID_o = sa_RID_valid[dsp_AR_slv_id_i];
     assign m_RDATA_o = sa_RDATA_valid[dsp_AR_slv_id_i];
+    assign m_RRESP_o = sa_RRESP_valid[dsp_AR_slv_id_i];
     assign m_RLAST_o = sa_RLAST_valid[dsp_AR_slv_id_i];
     assign m_RVALID_o = ~(fifo_rdata_empty[dsp_AR_slv_id_i] | dsp_AR_disable_i);
     // -- -- Output to Slave arbitration

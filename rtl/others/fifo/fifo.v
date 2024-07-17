@@ -23,7 +23,6 @@ module fifo
     localparam ADDR_WIDTH = $clog2(FIFO_DEPTH);
     // Internal variable declaration
     genvar addr;
-    integer addr_i;
     
     // Internal signal declaration
     // wire declaration
@@ -56,21 +55,30 @@ module fifo
         end
     endgenerate
     
-    // flip-flop logic 
+    // flip-flop logic
+    // -- Buffer updater
+    generate
+        for(addr = 0; addr < FIFO_DEPTH; addr = addr + 1) begin
+            always @(posedge clk) begin
+                if(!rst_n) begin 
+                    buffer[addr] <= {DATA_WIDTH{1'b0}};
+                end
+                else if(wr_valid_i & !full_o) begin
+                    buffer[addr] <= buffer_nxt[addr];
+                end
+            end
+        end
+    endgenerate
+    // -- Write pointer updater
     always @(posedge clk) begin
         if(!rst_n) begin 
-            for(addr_i = 0; addr_i < FIFO_DEPTH; addr_i = addr_i + 1) begin
-                buffer[addr_i] <= {DATA_WIDTH{1'b0}};
-            end
             wr_addr <= 0;        
         end
         else if(wr_valid_i & !full_o) begin
-            for(addr_i = 0; addr_i < FIFO_DEPTH; addr_i = addr_i + 1) begin
-                buffer[addr_i] <= buffer_nxt[addr_i];
-            end
             wr_addr <= wr_addr_inc;
         end
     end
+    // -- Read pointer updater
     always @(posedge clk) begin
         if(!rst_n) begin
             rd_addr <= 0;

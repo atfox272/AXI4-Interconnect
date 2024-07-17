@@ -10,6 +10,7 @@ module dsp_read_channel
     parameter TRANS_BURST_W     = 2,    // Width of xBURST 
     parameter TRANS_DATA_LEN_W  = 3,    // Bus width of xLEN
     parameter TRANS_DATA_SIZE_W = 3,    // Bus width of xSIZE
+    parameter TRANS_WR_RESP_W   = 2,
     // Slave configuration
     parameter SLV_ID_W          = $clog2(SLV_AMT),
     parameter SLV_ID_MSB_IDX    = 30,
@@ -38,6 +39,7 @@ module dsp_read_channel
     // ---- Read data channel (master)
     input   [TRANS_MST_ID_W*SLV_AMT-1:0]    sa_RID_i,
     input   [DATA_WIDTH*SLV_AMT-1:0]        sa_RDATA_i,
+    input   [TRANS_WR_RESP_W*SLV_AMT-1:0]   sa_RRESP_i,
     input   [SLV_AMT-1:0]                   sa_RLAST_i,
     input   [SLV_AMT-1:0]                   sa_RVALID_i,
     // Output declaration
@@ -47,6 +49,7 @@ module dsp_read_channel
     // ---- Read data channel (master)
     output  [TRANS_MST_ID_W-1:0]            m_RID_o,
     output  [DATA_WIDTH-1:0]                m_RDATA_o,
+    output  [TRANS_WR_RESP_W-1:0]           m_RRESP_o,
     output                                  m_RLAST_o,
     output                                  m_RVALID_o,
     // -- To Slave Arbitration
@@ -109,6 +112,7 @@ module dsp_read_channel
         .SLV_AMT(SLV_AMT),
         .DATA_WIDTH(DATA_WIDTH),
         .TRANS_MST_ID_W(TRANS_MST_ID_W),
+        .TRANS_WR_RESP_W(TRANS_WR_RESP_W),
         .SLV_ID_W(SLV_ID_W),
         .DSP_RDATA_DEPTH(DSP_RDATA_DEPTH)
     ) RDATA_channel (
@@ -117,12 +121,14 @@ module dsp_read_channel
         .m_RREADY_i(m_RREADY_i),
         .sa_RID_i(sa_RID_i),
         .sa_RDATA_i(sa_RDATA_i),
+        .sa_RRESP_i(sa_RRESP_i),
         .sa_RLAST_i(sa_RLAST_i),
         .sa_RVALID_i(sa_RVALID_i),
         .dsp_AR_slv_id_i(AR_R_slv_id),
         .dsp_AR_disable_i(AR_R_disable),
         .m_RID_o(m_RID_o),
         .m_RDATA_o(m_RDATA_o),
+        .m_RRESP_o(m_RRESP_o),
         .m_RLAST_o(m_RLAST_o),
         .m_RVALID_o(m_RVALID_o),
         .sa_RREADY_o(sa_RREADY_o)

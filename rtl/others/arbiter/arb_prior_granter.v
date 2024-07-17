@@ -10,6 +10,9 @@ module arb_prior_granter
     // Output declaration
     output  [P_REQUESTER_NUM - 1:0] prior_grant
 );
+    // Internal variable
+    genvar i;
+    genvar n;
     // Internal signal declaration
     // wire declaration
     wire    [P_REQUESTER_NUM - 1:0] request_valid;          // blue
@@ -20,8 +23,8 @@ module arb_prior_granter
     wire    [P_REQUESTER_NUM - 1:0] other_request_valid [0:P_REQUESTER_NUM - 1];    // violet
     
     // combinational logic
-    for(genvar i = 0; i < P_REQUESTER_NUM; i = i + 1) begin
-        for(genvar n = 0; n < P_REQUESTER_NUM; n = n + 1) begin
+    for(i = 0; i < P_REQUESTER_NUM; i = i + 1) begin
+        for(n = 0; n < P_REQUESTER_NUM; n = n + 1) begin
             if(n == i) assign other_request_valid[i][n] = 1'b0;
             else assign other_request_valid[i][n] = request_valid[n];
         end

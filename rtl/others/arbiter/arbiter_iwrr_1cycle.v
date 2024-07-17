@@ -22,7 +22,8 @@ module arbiter_iwrr_1cycle
     localparam REQ_NUM_W        = $clog2(P_REQUESTER_NUM);
     
     // Internal variable
-    integer i;
+//    integer i;
+    genvar i;
     // Internal signal declaration
     // wire declaration
     wire    [0:P_REQUESTER_NUM*P_WEIGHT_W - 1]  req_weight_nxt;         // Next requester weight    
@@ -80,16 +81,26 @@ module arbiter_iwrr_1cycle
     endgenerate
     
     // flip-flop
+    // -- Weight updater
+    generate
+        for(genvar i = 0; i < P_REQUESTER_NUM; i = i + 1) begin
+            always @(posedge clk) begin
+                if(~rst_n) begin
+                    req_weight_r[((i+1)*P_WEIGHT_W-1)-:P_WEIGHT_W] <= P_REQUESTER_WEIGHT[i*32+:32];
+                end
+                else if(grant_ready_i) begin
+                    req_weight_r[((i+1)*P_WEIGHT_W-1)-:P_WEIGHT_W] <= req_weight_nxt[((i+1)*P_WEIGHT_W-1)-:P_WEIGHT_W];
+                end
+            end
+        end
+    endgenerate
+    // -- Interleaving pointer
     always @(posedge clk) begin
         if(~rst_n) begin
             interleaving_ptr_r <= 0;
-            for(i = 0; i < P_REQUESTER_NUM; i = i + 1) begin
-                req_weight_r[((i+1)*P_WEIGHT_W-1)-:P_WEIGHT_W] <= P_REQUESTER_WEIGHT[i*32+:32];
-            end
         end
         else if(grant_ready_i) begin
             interleaving_ptr_r <= interleaving_ptr_nxt;
-            req_weight_r <= req_weight_nxt;
         end
     end
 endmodule

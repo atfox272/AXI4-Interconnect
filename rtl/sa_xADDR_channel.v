@@ -144,7 +144,6 @@ module sa_xADDR_channel
                 .mask_sel_i(msk_split_addr_sel[mst_idx]),
                 .ADDR_split_o(AxADDR_valid_split[mst_idx]),
                 .LEN_split_o(AxLEN_valid_split[mst_idx]), 
-                .SIZE_o(),
                 .crossing_flag(msk_addr_crossing_flag[mst_idx])
             );
         end

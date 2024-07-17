@@ -8,7 +8,8 @@ module sa_RDATA_channel
     parameter                       DATA_WIDTH          = 32,
     parameter                       ADDR_WIDTH          = 32,
     parameter                       TRANS_MST_ID_W      = 5,                            // Bus width of master transaction ID 
-    parameter                       TRANS_SLV_ID_W      = TRANS_MST_ID_W + MST_ID_W     // Bus width of slave transaction ID
+    parameter                       TRANS_SLV_ID_W      = TRANS_MST_ID_W + MST_ID_W,    // Bus width of slave transaction ID
+    parameter                       TRANS_WR_RESP_W     = 2
 )
 (
     // Input declaration
@@ -22,6 +23,7 @@ module sa_RDATA_channel
     // ---- Read data channel 
     input   [TRANS_SLV_ID_W-1:0]            s_RID_i,
     input   [DATA_WIDTH-1:0]                s_RDATA_i,
+    input   [TRANS_WR_RESP_W-1:0]           s_RRESP_i,
     input                                   s_RLAST_i,
     input                                   s_RVALID_i,
     // -- To Read Address channel
@@ -34,6 +36,7 @@ module sa_RDATA_channel
     // ---- Read data channel (master)
     output  [TRANS_MST_ID_W*MST_AMT-1:0]    dsp_RID_o,
     output  [DATA_WIDTH*MST_AMT-1:0]        dsp_RDATA_o,
+    output  [TRANS_WR_RESP_W*MST_AMT-1:0]   dsp_RRESP_o,
     output  [MST_AMT-1:0]                   dsp_RLAST_o,
     output  [MST_AMT-1:0]                   dsp_RVALID_o,
     // -- To slave (master interface of the interconnect)
@@ -109,6 +112,7 @@ module sa_RDATA_channel
             assign dsp_RVALID_o[mst_idx] = (mst_id == mst_idx) & s_RVALID_i;
             assign dsp_RID_o[TRANS_MST_ID_W*(mst_idx+1)-1-:TRANS_MST_ID_W] = s_RID_i[TRANS_MST_ID_W-1:0];
             assign dsp_RDATA_o[DATA_WIDTH*(mst_idx+1)-1-:DATA_WIDTH] = s_RDATA_i;
+            assign dsp_RRESP_o[TRANS_WR_RESP_W*(mst_idx+1)-1-:TRANS_WR_RESP_W] = s_RRESP_i;
             assign dsp_RLAST_o[mst_idx] = filter_RLAST;
         end
     endgenerate

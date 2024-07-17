@@ -60,6 +60,7 @@ module ai_dispatcher
     // ---- Read data channel (master)
     input   [TRANS_MST_ID_W*SLV_AMT-1:0]    sa_RID_i,
     input   [DATA_WIDTH*SLV_AMT-1:0]        sa_RDATA_i,
+    input   [TRANS_WR_RESP_W*SLV_AMT-1:0]   sa_RRESP_i,
     input   [SLV_AMT-1:0]                   sa_RLAST_i,
     input   [SLV_AMT-1:0]                   sa_RVALID_i,
     // Output declaration
@@ -77,6 +78,7 @@ module ai_dispatcher
     // ---- Read data channel (master)
     output  [TRANS_MST_ID_W-1:0]            m_RID_o,
     output  [DATA_WIDTH-1:0]                m_RDATA_o,
+    output  [TRANS_WR_RESP_W-1:0]           m_RRESP_o,
     output                                  m_RLAST_o,
     output                                  m_RVALID_o,
     // -- To Slave Arbitration
@@ -165,6 +167,7 @@ module ai_dispatcher
         .TRANS_BURST_W(TRANS_BURST_W),
         .TRANS_DATA_LEN_W(TRANS_DATA_LEN_W),
         .TRANS_DATA_SIZE_W(TRANS_DATA_SIZE_W),
+        .TRANS_WR_RESP_W(TRANS_WR_RESP_W),
         .SLV_ID_W(SLV_ID_W),
         .SLV_ID_MSB_IDX(SLV_ID_MSB_IDX),
         .SLV_ID_LSB_IDX(SLV_ID_LSB_IDX),
@@ -182,11 +185,13 @@ module ai_dispatcher
         .sa_ARREADY_i(sa_ARREADY_i),
         .sa_RID_i(sa_RID_i),
         .sa_RDATA_i(sa_RDATA_i),
+        .sa_RRESP_i(sa_RRESP_i),
         .sa_RLAST_i(sa_RLAST_i),
         .sa_RVALID_i(sa_RVALID_i),
         .m_ARREADY_o(m_ARREADY_o),
         .m_RID_o(m_RID_o),
         .m_RDATA_o(m_RDATA_o),
+        .m_RRESP_o(m_RRESP_o),
         .m_RLAST_o(m_RLAST_o),
         .m_RVALID_o(m_RVALID_o),
         .sa_ARID_o(sa_ARID_o),

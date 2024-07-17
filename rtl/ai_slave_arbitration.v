@@ -64,6 +64,7 @@ module ai_slave_arbitration
     // ---- Read data channel (master)
     input  [TRANS_SLV_ID_W-1:0]             s_RID_i,
     input  [DATA_WIDTH-1:0]                 s_RDATA_i,
+    input  [TRANS_WR_RESP_W-1:0]            s_RRESP_i,
     input                                   s_RLAST_i,
     input                                   s_RVALID_i,
     
@@ -82,6 +83,7 @@ module ai_slave_arbitration
     // ---- Read data channel (master)
     output  [TRANS_MST_ID_W*MST_AMT-1:0]    dsp_RID_o,
     output  [DATA_WIDTH*MST_AMT-1:0]        dsp_RDATA_o,
+    output  [TRANS_WR_RESP_W*MST_AMT-1:0]   dsp_RRESP_o,
     output  [MST_AMT-1:0]                   dsp_RLAST_o,
     output  [MST_AMT-1:0]                   dsp_RVALID_o,
     // -- To slave (master interface of the interconnect)
@@ -287,6 +289,7 @@ module ai_slave_arbitration
         .dsp_RREADY_i(dsp_RREADY_i),
         .s_RID_i(s_RID_i),
         .s_RDATA_i(s_RDATA_i),
+        .s_RRESP_i(s_RRESP_i),
         .s_RLAST_i(s_RLAST_i),
         .s_RVALID_i(s_RVALID_i),
         .AR_AxID_i(ARID_valid_nxt),
@@ -294,6 +297,7 @@ module ai_slave_arbitration
         .AR_shift_en_i(AR_shift_en),
         .dsp_RID_o(dsp_RID_o),
         .dsp_RDATA_o(dsp_RDATA_o),
+        .dsp_RRESP_o(dsp_RRESP_o),
         .dsp_RLAST_o(dsp_RLAST_o),
         .dsp_RVALID_o(dsp_RVALID_o),
         .s_RREADY_o(s_RREADY_o),

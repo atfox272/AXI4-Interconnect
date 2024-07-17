@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 // Testbench configuration
 `define NUM_TRANS       7
-//`define DIRECTED_TEST   0   // Directed Test or Random Test
+`define DIRECTED_TEST   0   // Directed Test or Random Test
 // Ax channel
 `define AX_START_MODE   0
 `define AX_STALL_MODE   1
@@ -44,27 +44,27 @@
     parameter                       DSP_RDATA_DEPTH     = 16;
 
 typedef struct {
-    int AxID;
-    int AxBURST;
-    int AxADDR_slv_id;
-    int AxADDR_addr;
-    int AxLEN;
-    int AxSIZE;
+    bit [TRANS_MST_ID_W-1:0]      AxID;
+    bit [TRANS_BURST_W-1:0]       AxBURST;
+    bit [SLV_ID_W-1:0]            AxADDR_slv_id;
+    bit [ADDR_WIDTH-SLV_ID_W-2:0] AxADDR_addr;
+    bit [TRANS_DATA_LEN_W-1:0]    AxLEN;
+    bit [TRANS_DATA_SIZE_W-1:0]   AxSIZE;
 } Ax_info;
 typedef struct {
-    int WDATA;
-    int WLAST;
+    bit [DATA_WIDTH-1:0] WDATA;
+    bit                  WLAST;
 } W_info;
 
 typedef struct {
-    int BID;
-    int BRESP;
+    bit [TRANS_SLV_ID_W-1:0]    BID;
+    bit [TRANS_WR_RESP_W-1:0]   BRESP;
 } B_info;
 
 typedef struct {
-    int RID;
-    int RDATA;
-    int RLAST;
+    bit [TRANS_SLV_ID_W-1:0]    RID;
+    bit [DATA_WIDTH-1:0]        RDATA;
+    bit                         RLAST;
 } R_info;
     
 
@@ -72,12 +72,13 @@ class m_Ax_transfer_rnd #(int mode = `AX_START_MODE);
         rand    bit [TRANS_MST_ID_W-1:0]        m_AxID;
         rand    bit [TRANS_BURST_W-1:0]         m_AxBURST;
         rand    bit [SLV_ID_W-1:0]              m_AxADDR_slv_id;
-        rand    bit [ADDR_WIDTH-SLV_ID_W-1:0]   m_AxADDR_addr;
+        rand    bit [ADDR_WIDTH-SLV_ID_W-2:0]   m_AxADDR_addr;
         rand    bit [TRANS_DATA_LEN_W-1:0]      m_AxLEN;
         rand    bit [TRANS_DATA_SIZE_W-1:0]     m_AxSIZE;
         rand    bit                             m_AxVALID;
         constraint m_Ax_cntr{
             if(mode == `AX_START_MODE) {
+                m_AxADDR_addr%(1<<m_AxSIZE) == 0;// All transfers must be aligned
                 m_AxVALID == 1;
             }
             else if (mode == `AX_STOP_MODE) {
@@ -529,9 +530,12 @@ module axi_interconnect_tb;
     end
     
     // Queue declaration
-    Ax_info AW_queue[MST_AMT][$];
-    W_info  W_queue [MST_AMT][$];
-    Ax_info AR_queue[MST_AMT][$];
+    Ax_info     m_AW_queue  [MST_AMT][$];
+    W_info      m_W_queue   [MST_AMT][$];
+    B_info      m_B_queue   [MST_AMT][$];
+    Ax_info     m_AR_queue  [MST_AMT][$];
+    
+    B_info      m_W_B_queue [MST_AMT][$];
     
     /********************** Directed test ***************************/
     `ifdef DIRECTED_TEST
@@ -623,6 +627,7 @@ module axi_interconnect_tb;
         localparam mst_idx = 0;
         #6; 
         // 4KB Crossing transaction
+        m_AW_transfer(.mst_id(mst_idx), .AWID(0), .AWADDR({2'b00, 30'd02}), .AWBURST(0), .AWLEN(4), .AWSIZE(0));
         m_AW_transfer(.mst_id(mst_idx), .AWID(1), .AWADDR({2'b00, 30'd4094}), .AWBURST(0), .AWLEN(4), .AWSIZE(0));
         // End
         @(posedge ACLK_i); #0.01;
@@ -649,6 +654,12 @@ module axi_interconnect_tb;
     initial begin : MASTER_0_W_channel
         localparam mst_idx = 0;
         #12; 
+        // Simple
+        m_W_transfer(.mst_id(mst_idx), .WDATA(13), .WLAST(0));
+        m_W_transfer(.mst_id(mst_idx), .WDATA(14), .WLAST(0));
+        m_W_transfer(.mst_id(mst_idx), .WDATA(15), .WLAST(0));
+        m_W_transfer(.mst_id(mst_idx), .WDATA(16), .WLAST(0));
+        m_W_transfer(.mst_id(mst_idx), .WDATA(17), .WLAST(1));
         // 4KB Crossing transaction
         m_W_transfer(.mst_id(mst_idx), .WDATA(30), .WLAST(0));
         m_W_transfer(.mst_id(mst_idx), .WDATA(40), .WLAST(0));
@@ -694,11 +705,11 @@ module axi_interconnect_tb;
         #10;
         master_driver(mst_id);
     end
-//    initial begin   : MASTER_DRIVER_1
-//        localparam mst_id = 1;
-//        #10;
-//        master_driver(mst_id);
-//    end
+    initial begin   : MASTER_DRIVER_1
+        localparam mst_id = 1;
+        #10;
+        master_driver(mst_id);
+    end
 //    initial begin   : MASTER_DRIVER_2
 //        localparam mst_id = 2;
 //        #10;
@@ -787,13 +798,14 @@ module axi_interconnect_tb;
                     // Randomize
                     assert(m_AW_rnd.randomize()) else $error("AR channel randomization failed");
                     // Start a AW transfer
-                    m_AW_transfer(  .mst_id(mst_id),
-                                    .AWID(i%OUTSTANDING_AMT),  
-                                    .AWADDR({m_AW_rnd.m_AxADDR_slv_id, m_AW_rnd.m_AxADDR_addr}),
-                                    .AWBURST(m_AW_rnd.m_AxBURST),
-                                    .AWLEN(m_AW_rnd.m_AxLEN),
-                                    .AWSIZE(m_AW_rnd.m_AxSIZE)
-                                 );
+                    m_AW_transfer(  
+                        .mst_id(mst_id),
+                        .AWID(i%OUTSTANDING_AMT),  
+                        .AWADDR({0, m_AW_rnd.m_AxADDR_slv_id, m_AW_rnd.m_AxADDR_addr}),
+                        .AWBURST(m_AW_rnd.m_AxBURST),
+                        .AWLEN(m_AW_rnd.m_AxLEN),
+                        .AWSIZE(m_AW_rnd.m_AxSIZE)
+                    );
                     // Wait for AWREADY                            
                     wait(m_AWREADY[mst_id] == 1);
                     // Push ADDR info to queue
@@ -803,8 +815,9 @@ module axi_interconnect_tb;
                     temp.AxADDR_addr    = m_AW_rnd.m_AxADDR_addr;
                     temp.AxLEN          = m_AW_rnd.m_AxLEN;
                     temp.AxSIZE         = m_AW_rnd.m_AxSIZE;
-                    AW_queue[mst_id].push_back(temp);
-                    $display("INFO: Send AW transfer from Master %d with AWID:%d and AWADDR:(%d, %d) and AWLEN: %d", mst_id, temp.AxID, temp.AxADDR_slv_id, temp.AxADDR_addr, temp.AxLEN);
+                    m_AW_queue[mst_id].push_back(temp);
+//                    $display("DEBUG: temp.AxID - temp.AxBURST - temp.AxLEN - temp.AxSIZE", temp.AxID, temp.AxBURST, temp.AxLEN, temp.AxSIZE);
+                    $display("INFO: Send AW transfer from Master %d with AWID:%d and AWADDR:(%h, %h) and AWLEN: %d", mst_id, temp.AxID, temp.AxADDR_slv_id, temp.AxADDR_addr, temp.AxLEN);
                     AW_started = 1;
                 end
                 cl;
@@ -812,47 +825,95 @@ module axi_interconnect_tb;
                 AW_completed = 1;
             end
             begin   : W_channel
-                Ax_info temp;
-                int WLAST_nxt;
+                Ax_info AW_cur;
+                B_info  B_nxt;
+                bit WLAST_nxt;
                 // Start W channel after the first AW transfer completed
                 wait(AW_started == 1);
                 for(int trans_ctn = 0; trans_ctn < `NUM_TRANS;) begin 
-                    if(AW_queue[mst_id].size() > 0) begin
-                        temp = AW_queue[mst_id].pop_back();
-                        for(int i = 0; i <= temp.AxLEN; i = i + 1) begin
-                            WLAST_nxt = i == temp.AxLEN;
+                    if(m_AW_queue[mst_id].size() > 0) begin
+                        AW_cur = m_AW_queue[mst_id].pop_back();
+                        for(int i = 0; i <= AW_cur.AxLEN; i = i + 1) begin
+                            WLAST_nxt = i == AW_cur.AxLEN;
                             // Randomize
                             assert(m_W_rnd.randomize()) else $error("W channel randomization failed"); 
                             // Start a W transfer
-                            m_W_transfer(   .mst_id(mst_id),
-                                            .WDATA(m_W_rnd.m_WDATA),
-                                            .WLAST(WLAST_nxt));        
+                            m_W_transfer(   
+                                .mst_id(mst_id),
+                                .WDATA(m_W_rnd.m_WDATA),
+                                .WLAST(WLAST_nxt)
+                            );
                             wait(m_WREADY[mst_id] == 1);
                             // Push ADDR info to queue
-                            $display("INFO: Send a W transfer from Master %d with WDATA: %d and WLAST: %d", mst_id, m_W_rnd.m_WDATA, WLAST_nxt);
+                            $display("INFO: Send a W transfer from Master %d with WDATA: %d and WLAST: %d and i=%d and AW_cur.AxLEN=%d", mst_id, m_W_rnd.m_WDATA, WLAST_nxt, i, AW_cur.AxLEN);
                         end
                         $display("INFO: W channel completed: %d", trans_ctn);
                         trans_ctn = trans_ctn + 1;
+                        // Push ID to BID_list
+                        B_nxt.BID = AW_cur.AxID;
+                        B_nxt.BRESP = 0;
+                        m_W_B_queue[mst_id].push_back(B_nxt);
                     end 
                     else begin
+                        // Wait for AW channel
                         cl;
                         m_WVALID[mst_id] <= 0;
                     end
                 end
             end
             begin   : B_channel
-            
+//                int cur_BID;
+//                int cur_BRESP;
+//                m_B_receive (   
+//                    .mst_id(mst_id),
+//                    .BID(cur_BID),
+//                    .BRESP(cur_BRESP)
+//                );
+//                $display("INFO: B channel received: BID %d", cur_BID);
+                // Find the transaction ID in ID list
             end
             begin   : AR_channel
-                for(int i = 0; i < `NUM_TRANS; i = i + 1) begin
-                    assert(m_AR_rnd.randomize()) else $error("AR channel randomization failed");
-                end
+                // Todo:
+            end
+            begin   : R_channel
+                // Todo:
+            end 
+        join
+        $display("INFO: Master %d completed", mst_id);
+    endtask 
+   
+    task automatic slave_driver (input int slv_id);
+        fork
+            begin   : AW_channel
+//                int AWID;
+//                int AWADDR;
+//                int AWBURST;
+//                int AWLEN;
+//                int AWSIZE;
+//                s_AW_receive(
+//                    .slv_id(slv_id),
+//                    .AWID(AWID),
+//                    .AWADDR(AWADDR),
+//                    .AWBURST(AWBURST),
+//                    .AWLEN(AWLEN),
+//                    .AWSIZE(AWSIZE)
+//                );
+                // Todo:
+            end
+            begin   : W_channel
+                
+            end
+            begin   : B_channel
+                
+            end
+            begin   : AR_channel
+                
             end
             begin   : R_channel
             
             end 
         join
-    endtask 
+    endtask
    
    
     task automatic cl;
@@ -904,6 +965,38 @@ module axi_interconnect_tb;
         m_WVALID[mst_id]    <= 1'b1;
     endtask
     
+//    task automatic m_B_receive (
+//        input       [MST_ID_W-1:0]          mst_id,
+//        output  reg [TRANS_SLV_ID_W-1:0]    BID,
+//        output  reg [TRANS_WR_RESP_W-1:0]   BRESP
+//    );
+//        // Wait for BVALID
+//        wait(m_BVALID[mst_id] == 1);
+//        #0.01;
+//        BID     <= m_BID[mst_id];
+//        BRESP   <= m_BRESP[mst_id];
+//        // Handshake occur
+//        cl;
+//    endtask
+    
+    task automatic s_AW_receive(
+        input       [MST_ID_W-1:0]            slv_id,
+        output  reg [TRANS_MST_ID_W-1:0]      AWID,
+        output  reg [ADDR_WIDTH-1:0]          AWADDR,
+        output  reg [TRANS_BURST_W-1:0]       AWBURST,
+        output  reg [TRANS_DATA_LEN_W-1:0]    AWLEN,
+        output  reg [TRANS_DATA_SIZE_W-1:0]   AWSIZE
+    );
+        // Wait for BVALID
+        wait(s_AWVALID[slv_id] == 1);
+        #0.01;
+        AWID    <= s_AWID[slv_id];
+        AWADDR  <= s_AWADDR[slv_id];
+        AWBURST <= s_AWBURST[slv_id];
+        AWLEN   <= s_AWLEN[slv_id]; 
+        AWSIZE  <= s_AWSIZE[slv_id]; 
+        cl;
+    endtask
     task automatic s_R_transfer (
         input [SLV_ID_W-1:0]            slv_id,
         input [TRANS_SLV_ID_W-1:0]      RID, 

@@ -13,7 +13,6 @@ module splitting_4kb_masker
     // Output declaration
     output  [ADDR_WIDTH-1:0]    ADDR_split_o,
     output  [LEN_WIDTH-1:0]     LEN_split_o,
-    output  [SIZE_WIDTH-1:0]    SIZE_o,
     output                      crossing_flag
 );
 
@@ -57,7 +56,5 @@ module splitting_4kb_masker
     assign ADDR_msk_1 = ADDR_i;
     assign ADDR_msk_2 = {ADDR_i[ADDR_WIDTH-1:BIT_OFFSET_4KB-1] + 1'b1, {(BIT_OFFSET_4KB-1){1'b0}}};
     assign ADDR_split_o = (mask_sel_i) ? ADDR_msk_2 : ADDR_msk_1;
-    // Size
-    assign SIZE_o = SIZE_i;
 
 endmodule

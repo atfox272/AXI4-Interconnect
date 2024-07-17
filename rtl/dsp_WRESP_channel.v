@@ -56,7 +56,6 @@ module dsp_WRESP_channel
     wire                            fifo_slv_ord_wr_en;
     wire                            fifo_slv_ord_rd_en;
     wire                            fifo_slv_ord_empty;
-    wire                            fifo_slv_ord_full;
     // -- Slave resp FIFO
     wire    [RESP_INFO_W-1:0]       resp_info           [SLV_AMT-1:0];
     wire    [RESP_INFO_W-1:0]       resp_info_valid     [SLV_AMT-1:0];
@@ -82,7 +81,7 @@ module dsp_WRESP_channel
         .rd_valid_i(fifo_slv_ord_rd_en),
         .wr_valid_i(fifo_slv_ord_wr_en),
         .empty_o(fifo_slv_ord_empty),
-        .full_o(fifo_slv_ord_full),
+        .full_o(),
         .almost_empty_o(),
         .almost_full_o(),
         .rst_n(ARESETn_i) 
