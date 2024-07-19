@@ -69,7 +69,7 @@ module arbiter_iwrr_1cycle
     assign interleaving_ptr_incr = (grant_valid_o[P_REQUESTER_NUM - 1]) ? 0 : req_grant_enc + 1'b1;
     assign interleaving_ptr_nxt = (|grant_valid_o) ? interleaving_ptr_incr : interleaving_ptr_r;
     generate
-        for(genvar i = 0; i < P_REQUESTER_NUM; i = i + 1) begin
+        for(i = 0; i < P_REQUESTER_NUM; i = i + 1) begin
             assign req_weight_remain[i] = num_grant_req_i < req_weight_r[((i+1)*P_WEIGHT_W-1)-:P_WEIGHT_W];
             assign req_weight_completed[i] = ~|req_weight_r[((i+1)*P_WEIGHT_W-1)-:P_WEIGHT_W];	// (r_weight == 0)
             assign req_weight_decr[((i+1)*P_WEIGHT_W-1)-:P_WEIGHT_W] = (req_weight_remain[i]) ? req_weight_r[((i+1)*P_WEIGHT_W-1)-:P_WEIGHT_W] - num_grant_req_i : 0;
@@ -83,7 +83,7 @@ module arbiter_iwrr_1cycle
     // flip-flop
     // -- Weight updater
     generate
-        for(genvar i = 0; i < P_REQUESTER_NUM; i = i + 1) begin
+        for(i = 0; i < P_REQUESTER_NUM; i = i + 1) begin
             always @(posedge clk) begin
                 if(~rst_n) begin
                     req_weight_r[((i+1)*P_WEIGHT_W-1)-:P_WEIGHT_W] <= P_REQUESTER_WEIGHT[i*32+:32];
