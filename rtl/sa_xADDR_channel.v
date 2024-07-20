@@ -151,12 +151,12 @@ module sa_xADDR_channel
     arbiter_iwrr_1cycle #(
         .P_REQUESTER_NUM(MST_AMT),
         .P_REQUESTER_WEIGHT(MST_WEIGHT),
-        .P_NUM_GRANT_REQ_W(TRANS_DATA_LEN_W)
+        .P_NUM_GRANT_REQ_W(1)
     ) arbiter (
         .clk(ACLK_i),
         .rst_n(ARESETn_i),
         .req_i(arb_req),          
-        .num_grant_req_i(arb_num_grant_req),
+        .num_grant_req_i(1'b1),
         .grant_ready_i(arb_grant_ready),  
         .grant_valid_o(arb_grant_valid)
     );
@@ -218,13 +218,13 @@ module sa_xADDR_channel
     assign AxBURST_o_nxt = AxBURST_valid[granted_mst_id];
     assign AxLEN_o_nxt = AxLEN_valid_split[granted_mst_id];
     assign AxSIZE_o_nxt = AxSIZE_valid[granted_mst_id];
-    assign AxVALID_o_nxt = arb_req_remain;
+    assign AxVALID_o_nxt = arb_req_remain & ~xDATA_stall_i;
     
     assign xDATA_AxID_o = AxID_o_nxt;
     assign xDATA_mst_id_o = AxID_o_nxt[TRANS_SLV_ID_W-1-:MST_ID_W];
     assign xDATA_crossing_flag_o = msk_addr_crossing_valid[granted_mst_id];
     assign xDATA_AxLEN_o = AxLEN_o_nxt;
-    assign xDATA_fifo_order_wr_en_o = x_channel_shift_en & arb_req_remain;
+    assign xDATA_fifo_order_wr_en_o = AxVALID_o_nxt;
     // Flip-flop logic
     generate
     // -- ADDR mask controller
@@ -247,7 +247,6 @@ module sa_xADDR_channel
             AxBURST_o_r <= 0;
             AxLEN_o_r <= 0;
             AxSIZE_o_r <= 0;
-            AxVALID_o_r <= 0;
         end
         else if(x_channel_shift_en) begin
             AxID_o_r <= AxID_o_nxt;
@@ -255,6 +254,13 @@ module sa_xADDR_channel
             AxBURST_o_r <= AxBURST_o_nxt;
             AxLEN_o_r <= AxLEN_o_nxt;
             AxSIZE_o_r <= AxSIZE_o_nxt;
+        end
+    end
+    always @(posedge ACLK_i) begin
+        if(~ARESETn_i) begin
+            AxVALID_o_r <= 0;
+        end
+        else if(xADDR_channel_shift_en) begin
             AxVALID_o_r <= AxVALID_o_nxt;
         end
     end
