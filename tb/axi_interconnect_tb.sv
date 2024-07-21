@@ -1,9 +1,10 @@
 `timescale 1ns / 1ps
 // Testbench configuration
-`define NUM_TRANS           10
+`define NUM_TRANS           40
 // Random test mode
 `define BURST_MODE          0
 `define BURST_MODE_WR       2
+`define BURST_MODE_RD       3
 `define ARBITRATION_MODE    1
 
 `define MAX_LENGTH          8
@@ -58,12 +59,14 @@ typedef struct {
 } W_info;
 
 typedef struct {
-    bit [TRANS_SLV_ID_W-1:0]        BID;
+    bit [TRANS_MST_ID_W-1:0]        BID_m;
+    bit [TRANS_SLV_ID_W-1:0]        BID_s;
     bit [TRANS_WR_RESP_W-1:0]       BRESP;
 } B_info;
 
 typedef struct {
-    bit [TRANS_SLV_ID_W-1:0]        RID;
+    bit [TRANS_MST_ID_W-1:0]        RID_m;
+    bit [TRANS_SLV_ID_W-1:0]        RID_s;
     bit [DATA_WIDTH-1:0]            RDATA   [`MAX_LENGTH];
     bit [TRANS_WR_RESP_W-1:0]       RRESP;
 } R_info;
@@ -101,6 +104,13 @@ class m_trans_random #(int mode = `BURST_MODE, int trans_rate = 50);
         else if(mode == `BURST_MODE_WR) {
             m_trans_avail               == 1;
             m_trans_wr_rd               == 1;
+            m_AxBURST                   == 1;                 
+            m_AxADDR_slv_id             dist{0 :/ 1, 1:/ 1};
+            m_AxADDR_addr%(1<<m_AxSIZE) == 0;   // All transfers must be aligned
+        }
+        else if(mode == `BURST_MODE_RD) {
+            m_trans_avail               == 1;
+            m_trans_wr_rd               == 0;
             m_AxBURST                   == 1;                 
             m_AxADDR_slv_id             dist{0 :/ 1, 1:/ 1};
             m_AxADDR_addr%(1<<m_AxSIZE) == 0;   // All transfers must be aligned
@@ -495,21 +505,21 @@ module axi_interconnect_tb;
         #10;
         sequencer(mst_id);
     end
-//    initial begin : SEQUENCER_1
-//        localparam mst_id = 1;
-//        #10;
-//        sequencer(mst_id);
-//    end
-//    initial begin : SEQUENCER_2
-//        localparam mst_id = 2;
-//        #10;
-//        sequencer(mst_id);
-//    end
-//    initial begin : SEQUENCER_3
-//        localparam mst_id = 3;
-//        #10;
-//        sequencer(mst_id);
-//    end
+    initial begin : SEQUENCER_1
+        localparam mst_id = 1;
+        #10;
+        sequencer(mst_id);
+    end
+    initial begin : SEQUENCER_2
+        localparam mst_id = 2;
+        #10;
+        sequencer(mst_id);
+    end
+    initial begin : SEQUENCER_3
+        localparam mst_id = 3;
+        #10;
+        sequencer(mst_id);
+    end
     // -- -- -- -- -- -- --  Sequencer  -- -- -- -- -- -- -- 
     
     // -- -- -- -- -- -- -- Master Driver -- -- -- -- -- -- -- 
@@ -518,21 +528,21 @@ module axi_interconnect_tb;
         #10;
         master_driver(mst_id);
     end
-//    initial begin   : MASTER_DRIVER_1
-//        localparam mst_id = 1;
-//        #10;
-//        master_driver(mst_id);
-//    end
-//    initial begin   : MASTER_DRIVER_2
-//        localparam mst_id = 2;
-//        #10;
-//        master_driver(mst_id);
-//    end
-//    initial begin   : MASTER_DRIVER_3
-//        localparam mst_id = 3;
-//        #10;
-//        master_driver(mst_id);
-//    end
+    initial begin   : MASTER_DRIVER_1
+        localparam mst_id = 1;
+        #10;
+        master_driver(mst_id);
+    end
+    initial begin   : MASTER_DRIVER_2
+        localparam mst_id = 2;
+        #10;
+        master_driver(mst_id);
+    end
+    initial begin   : MASTER_DRIVER_3
+        localparam mst_id = 3;
+        #10;
+        master_driver(mst_id);
+    end
     // -- -- -- -- -- -- -- Master Driver -- -- -- -- -- -- -- 
     
     // -- -- -- -- -- -- --  Slave Driver -- -- -- -- -- -- -- 
@@ -570,7 +580,7 @@ module axi_interconnect_tb;
     
     // Transaction generator
     // -- Sequencer
-    m_trans_random #(`BURST_MODE_WR) master_trans_gen [MST_AMT];
+    m_trans_random #(`BURST_MODE) master_trans_gen [MST_AMT];
     // -- Packet
     // -- -- Packet to Master Driver (mailbox)
     mailbox #(Ax_info)  pck_AW_queue    [MST_AMT];
@@ -586,12 +596,12 @@ module axi_interconnect_tb;
     // -- -- Read channel
     // -- -- -- AR to R
     mailbox #(Ax_info)  m_drv_AR_info   [MST_AMT];  // Store AWLEN
-    mailbox #(R_info)   m_drv_R_golden  [MST_AMT];  // RID = ARID, RDATA[n] == (ARADDR + n*(2**AWSIZE)), RRESP == 0;
     // -- Slave Driver
     // -- -- Write channel
     mailbox #(Ax_info)  s_drv_AW_info   [MST_AMT];
     mailbox #(B_info)   s_drv_B_resp    [MST_AMT];
     // -- -- Read channel 
+    mailbox #(Ax_info)  s_drv_AR_info   [MST_AMT];
     
     task automatic sequencer (input int mst_id);
         // Temporary variable
@@ -648,7 +658,6 @@ module axi_interconnect_tb;
         m_drv_AW_info[mst_id]   = new();
         m_drv_B_golden[mst_id]  = new();
         m_drv_AR_info[mst_id]   = new();
-        m_drv_R_golden[mst_id]  = new();
         fork
             begin   : Ax_channel
                 Ax_info     Ax_temp;
@@ -670,7 +679,7 @@ module axi_interconnect_tb;
                             // Wait for Handshake occuring
                             wait(m_AWREADY[mst_id] == 1); #0.01;
                             // Expected B channel
-                            B_temp.BID      =   Ax_temp.AxID_m;
+                            B_temp.BID_m    =   Ax_temp.AxID_m;
                             B_temp.BRESP    =   0;  //  Only 'OKAY' 
                             // Store information
                             m_drv_AW_info[mst_id].put(Ax_temp);
@@ -689,15 +698,8 @@ module axi_interconnect_tb;
                             m_AWVALID[mst_id] <= 1'b0;
                             // Wait for Handshake occuring
                             wait(m_ARREADY[mst_id] == 1); #0.01;
-                            // Expected R channel
-                            R_temp.RID      = Ax_temp.AxID_m;
-                            R_temp.RRESP    = 0;
-                            for(int i = 0; i <= Ax_temp.AxLEN; i = i + 1) begin
-                                R_temp.RDATA[i] = {1'b0, Ax_temp.AxADDR_slv_id, Ax_temp.AxADDR_addr} + i*(2**Ax_temp.AxSIZE);
-                            end
                             // Store information
                             m_drv_AR_info[mst_id].put(Ax_temp);
-                            m_drv_R_golden[mst_id].put(R_temp);
                         end
                     end
                     else begin
@@ -741,37 +743,77 @@ module axi_interconnect_tb;
                         m_BREADY[mst_id] <= 1'b1;
                         m_B_receive (   
                             .mst_id(mst_id),
-                            .BID(B_sample.BID),
+                            .BID(B_sample.BID_m),
                             .BRESP(B_sample.BRESP)
                         );
-                        if(B_sample.BID == B_temp.BID && B_sample.BRESP == B_temp.BRESP) begin
-                            $display("[PASS]: The transaction with BID = %d has completed", B_temp.BID);
+                        if(B_sample.BID_m == B_temp.BID_m && B_sample.BRESP == B_temp.BRESP) begin
+                            $display("[PASS]: Master%1d - The WR transaction with ID = %2d has completed", mst_id, B_temp.BID_m);
                         end
                         else begin
-                            $display("[FAIL]: Sample BID = %d and Golden BID = %d", B_sample.BID, B_temp.BID);
-                            $finish;
+                            $display("[FAIL]: Master%1d - Sample BID = %d and Golden BID = %d", mst_id, B_sample.BID_m, B_temp.BID_m);
+                            $stop;
                         end
                         // Handshake occurs
                         cl;
                     end
                     else begin
                         // Wait 1 cycle
-                        @(posedge ACLK_i);
+                        cl;
                         // Dessert BREADY
                         m_BREADY[mst_id] <= 1'b0;
                     end
                 end
             end
             begin   : R_channel
-                // Todo: 
+                Ax_info AR_temp;
+                R_info  R_temp;
+                bit     RLAST_temp;
+                forever begin
+                    if(m_drv_AR_info[mst_id].try_get(AR_temp)) begin
+                        // Assert RREADY
+                        m_RREADY[mst_id] = 1'b1;
+                        for(int i = 0; i <= AR_temp.AxLEN; i = i + 1) begin
+                            m_R_receive (
+                                .mst_id(mst_id),
+                                .RID(R_temp.RID_m),
+                                .RDATA(R_temp.RDATA[i]),
+                                .RRESP(R_temp.RRESP[i]),
+                                .RLAST(RLAST_temp)
+                            );
+                            // Handshake occurs
+                            cl;
+                            // Monitor
+                            if(R_temp.RDATA[i] == {1'b0, AR_temp.AxADDR_slv_id, AR_temp.AxADDR_addr} + i*(2**AR_temp.AxSIZE)) begin
+                                // Pass
+                            end
+                            else begin
+                                $display("[FAIL]: Master%1d - Sample RDATA[%1d] = %h and Golden RDATA = %h", mst_id, i, R_temp.RDATA[i], {1'b0, AR_temp.AxADDR_slv_id, AR_temp.AxADDR_addr} + i*(2**AR_temp.AxSIZE));
+                                $stop;
+                            end
+                            if(RLAST_temp == (i == AR_temp.AxLEN)) begin
+                                // Pass
+                            end
+                            else begin
+                                $display("[FAIL]: Master%1d - Sample RLAST = %1b and Golden RLAST = %1b", mst_id, RLAST_temp, (i == AR_temp.AxLEN));
+                                $stop;
+                            end
+                        end
+                        $display("[PASS]: Master%1d - The RD transaction with ID = %2d has completed", mst_id, AR_temp.AxID_m);
+                    end
+                    else begin
+                        // Wait 1 cycle
+                        cl;
+                        m_RREADY[mst_id] = 1'b0;
+                    end
+                end 
             end 
         join_none
-        $display("INFO: Master %d completed", mst_id);
     endtask 
    
     task automatic slave_driver (input int slv_id);
         s_drv_AW_info[slv_id]   = new();
         s_drv_B_resp[slv_id]    = new();
+        s_drv_AR_info[slv_id]   = new();
         fork
             begin   : AW_channel
                 Ax_info AW_temp;
@@ -826,7 +868,7 @@ module axi_interconnect_tb;
                             cl;
                         end
                         // Generate B transfer
-                        B_temp.BID      = AW_temp.AxID_s;
+                        B_temp.BID_s    = AW_temp.AxID_s;
                         B_temp.BRESP    = 0;
                         s_drv_B_resp[slv_id].put(B_temp);
                     end
@@ -843,7 +885,7 @@ module axi_interconnect_tb;
                     if(s_drv_B_resp[slv_id].try_get(B_temp)) begin
                         s_B_transfer (
                             .slv_id(slv_id),
-                            .BID(B_temp.BID),
+                            .BID(B_temp.BID_s),
                             .BRESP(B_temp.BRESP)
                         );
                         // Wait for handshaking
@@ -857,10 +899,46 @@ module axi_interconnect_tb;
                 end
             end
             begin   : AR_channel
-                
+                Ax_info AR_temp;
+                bit     DMA_bit_temp;
+                forever begin
+                    s_AR_receive (
+                        .slv_id (slv_id),
+                        .ARID   (AR_temp.AxID_s),
+                        .ARADDR ({DMA_bit_temp, AR_temp.AxADDR_slv_id, AR_temp.AxADDR_addr}),
+                        .ARBURST(AR_temp.AxBURST),
+                        .ARLEN  (AR_temp.AxLEN),
+                        .ARSIZE (AR_temp.AxSIZE)
+                    );
+                    // Handshake occurs
+                    cl;
+                    // Store AW info 
+                    s_drv_AR_info[slv_id].put(AR_temp);
+                end
             end
             begin   : R_channel
-            
+                Ax_info AR_temp;
+                forever begin
+                    if(s_drv_AR_info[slv_id].try_get(AR_temp)) begin
+                        for(int i = 0; i <= AR_temp.AxLEN; i = i + 1) begin
+                            s_R_transfer (
+                                .slv_id(slv_id),
+                                .RID(AR_temp.AxID_s),
+                                .RDATA({1'b0, AR_temp.AxADDR_slv_id, AR_temp.AxADDR_addr} + i*(2**AR_temp.AxSIZE)),
+                                .RRESP(0),
+                                .RLAST(i == AR_temp.AxLEN)
+                            );
+                            // Wait for handshaking
+                            #0.01;
+                            wait(s_RREADY[slv_id] == 1'b1); #0.01;
+                        end
+                    end
+                    else begin
+                        // Wait 1 cycle
+                        cl;
+                        s_RVALID[slv_id] = 1'b0;
+                    end
+                end
             end 
         join_none
     endtask
@@ -868,23 +946,6 @@ module axi_interconnect_tb;
    
     task automatic cl;
         @(posedge ACLK_i); #0.01;
-    endtask
-    
-    task automatic m_AR_transfer(
-        input [MST_ID_W-1:0]            mst_id,
-        input [TRANS_MST_ID_W-1:0]      ARID,
-        input [ADDR_WIDTH-1:0]          ARADDR,
-        input [TRANS_BURST_W-1:0]       ARBURST,
-        input [TRANS_DATA_LEN_W-1:0]    ARLEN,
-        input [TRANS_DATA_SIZE_W-1:0]   ARSIZE
-    );
-        cl;
-        m_ARID[mst_id]     <= ARID;
-        m_ARADDR[mst_id]   <= ARADDR;
-        m_ARBURST[mst_id]  <= ARBURST;
-        m_ARLEN[mst_id]    <= ARLEN;
-        m_ARSIZE[mst_id]   <= ARSIZE;
-        m_ARVALID[mst_id]  <= 1'b1;
     endtask
     
     task automatic m_AW_transfer(
@@ -903,7 +964,6 @@ module axi_interconnect_tb;
         m_AWSIZE[mst_id]   <= AWSIZE;
         m_AWVALID[mst_id]  <= 1'b1;
     endtask
-    
     task automatic m_W_transfer (
         input [MST_ID_W-1:0]            mst_id,
         input [DATA_WIDTH-1:0]          WDATA,
@@ -917,7 +977,7 @@ module axi_interconnect_tb;
     
     task automatic m_B_receive (
         input       [MST_ID_W-1:0]          mst_id,
-        output      [TRANS_SLV_ID_W-1:0]    BID,
+        output      [TRANS_MST_ID_W-1:0]    BID,
         output      [TRANS_WR_RESP_W-1:0]   BRESP
     );
         // Wait for BVALID
@@ -926,10 +986,40 @@ module axi_interconnect_tb;
         BID     = m_BID[mst_id];
         BRESP   = m_BRESP[mst_id];
     endtask
-    
+    task automatic m_AR_transfer(
+        input [MST_ID_W-1:0]            mst_id,
+        input [TRANS_MST_ID_W-1:0]      ARID,
+        input [ADDR_WIDTH-1:0]          ARADDR,
+        input [TRANS_BURST_W-1:0]       ARBURST,
+        input [TRANS_DATA_LEN_W-1:0]    ARLEN,
+        input [TRANS_DATA_SIZE_W-1:0]   ARSIZE
+    );
+        cl;
+        m_ARID[mst_id]     <= ARID;
+        m_ARADDR[mst_id]   <= ARADDR;
+        m_ARBURST[mst_id]  <= ARBURST;
+        m_ARLEN[mst_id]    <= ARLEN;
+        m_ARSIZE[mst_id]   <= ARSIZE;
+        m_ARVALID[mst_id]  <= 1'b1;
+    endtask
+    task automatic m_R_receive (
+        input   [MST_ID_W-1:0]          mst_id,
+        output  [TRANS_MST_ID_W-1:0]    RID, 
+        output  [DATA_WIDTH-1:0]        RDATA,
+        output  [TRANS_WR_RESP_W-1:0]   RRESP,
+        output                          RLAST
+    );
+        // Wait for BVALID
+        wait(m_RVALID[mst_id] == 1);
+        #0.01;
+        RID     =   m_RID[mst_id];
+        RDATA   =   m_RDATA[mst_id];
+        RRESP   =   m_RRESP[mst_id];
+        RLAST   =   m_RLAST[mst_id];
+    endtask
     task automatic s_AW_receive(
-        input       [MST_ID_W-1:0]          slv_id,
-        output      [TRANS_MST_ID_W-1:0]    AWID,
+        input       [SLV_ID_W-1:0]          slv_id,
+        output      [TRANS_SLV_ID_W-1:0]    AWID,
         output      [ADDR_WIDTH-1:0]        AWADDR,
         output      [TRANS_BURST_W-1:0]     AWBURST,
         output      [TRANS_DATA_LEN_W-1:0]  AWLEN,
@@ -963,15 +1053,34 @@ module axi_interconnect_tb;
         s_BRESP[slv_id]     <= BRESP;
         s_BVALID[slv_id]    <= 1'b1;
     endtask
+    task automatic s_AR_receive(
+        input       [SLV_ID_W-1:0]          slv_id,
+        output      [TRANS_SLV_ID_W-1:0]    ARID,
+        output      [ADDR_WIDTH-1:0]        ARADDR,
+        output      [TRANS_BURST_W-1:0]     ARBURST,
+        output      [TRANS_DATA_LEN_W-1:0]  ARLEN,
+        output      [TRANS_DATA_SIZE_W-1:0] ARSIZE
+    );
+        // Wait for BVALID
+        wait(s_ARVALID[slv_id] == 1);
+        #0.01;
+        ARID    = s_ARID[slv_id];
+        ARADDR  = s_ARADDR[slv_id];
+        ARBURST = s_ARBURST[slv_id];
+        ARLEN   = s_ARLEN[slv_id]; 
+        ARSIZE  = s_ARSIZE[slv_id]; 
+    endtask
     task automatic s_R_transfer (
         input [SLV_ID_W-1:0]            slv_id,
         input [TRANS_SLV_ID_W-1:0]      RID, 
         input [DATA_WIDTH-1:0]          RDATA,
+        input [TRANS_WR_RESP_W-1:0]     RRESP,
         input                           RLAST
     );
         cl;
         s_RID[slv_id]       <= RID;
         s_RDATA[slv_id]     <= RDATA;
+        s_RRESP[slv_id]     <= RRESP;
         s_RLAST[slv_id]     <= RLAST;
         s_RVALID[slv_id]    <= 1'b1;
     endtask
