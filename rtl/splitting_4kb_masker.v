@@ -15,17 +15,19 @@ module splitting_4kb_masker
     output  [LEN_WIDTH-1:0]     LEN_split_o,
     output                      crossing_flag
 );
-
+    // Local parameters intiialization
     localparam BIT_OFFSET_4KB = 12; // log2(4096) = 12
+    localparam TRANS_SIZE_EXT = (BIT_OFFSET_4KB+1) - (LEN_WIDTH+1+2**SIZE_WIDTH-1);
     
     // Internal signal declaration
     // wire declaration
-    wire [(LEN_WIDTH+2**SIZE_WIDTH):0]      trans_size;
-    wire [(LEN_WIDTH+2**SIZE_WIDTH):0]      trans_size_rem;
+    wire [(LEN_WIDTH+1+2**SIZE_WIDTH-1)-1:0]trans_size;
+    wire [BIT_OFFSET_4KB-1:0]               trans_size_ext;
+    wire [(LEN_WIDTH+1+2**SIZE_WIDTH-1)-1:0]trans_size_rem;
     wire [BIT_OFFSET_4KB:0]                 addr_end;
-    wire [(LEN_WIDTH+2**SIZE_WIDTH):0]      trans_size_sll      [0:2**SIZE_WIDTH-1];
-    wire [(LEN_WIDTH+2**SIZE_WIDTH):0]      trans_size_rem_srl  [0:2**SIZE_WIDTH-1];
-    wire [(LEN_WIDTH+2**SIZE_WIDTH):0]      LEN_rem_srl;
+    wire [(LEN_WIDTH+1+2**SIZE_WIDTH-1)-1:0]trans_size_sll      [0:2**SIZE_WIDTH-1];
+    wire [(LEN_WIDTH+1+2**SIZE_WIDTH-1)-1:0]trans_size_rem_srl  [0:2**SIZE_WIDTH-1];
+    wire [(LEN_WIDTH+1+2**SIZE_WIDTH-1)-1:0]LEN_rem_srl;
     wire [LEN_WIDTH:0]                      LEN_incr;                        
     wire [LEN_WIDTH-1:0]                    LEN_msk_1;                        
     wire [LEN_WIDTH-1:0]                    LEN_msk_2;    
@@ -44,7 +46,8 @@ module splitting_4kb_masker
     
     // 4KB crossing detector
     assign trans_size = trans_size_sll[SIZE_i];
-    assign addr_end = {1'b0, ADDR_i[BIT_OFFSET_4KB-1:0]} + {1'b0, {(BIT_OFFSET_4KB-((LEN_WIDTH+1)+2**SIZE_WIDTH)){1'b0}}, trans_size};
+    assign trans_size_ext = {{TRANS_SIZE_EXT{1'b0}}, trans_size};
+    assign addr_end = {1'b0, ADDR_i[BIT_OFFSET_4KB-1:0]} + trans_size_ext;
     assign crossing_flag = addr_end[BIT_OFFSET_4KB];
     // LEN masker
     assign trans_size_rem = addr_end[BIT_OFFSET_4KB-1:0];

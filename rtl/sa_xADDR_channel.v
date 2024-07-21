@@ -240,6 +240,7 @@ module sa_xADDR_channel
     end 
     endgenerate
     // -- Output reg
+    // -- -- AW info
     always @(posedge ACLK_i) begin
         if(~ARESETn_i) begin
             AxID_o_r <= 0;
@@ -256,6 +257,7 @@ module sa_xADDR_channel
             AxSIZE_o_r <= AxSIZE_o_nxt;
         end
     end
+    // -- -- AW control
     always @(posedge ACLK_i) begin
         if(~ARESETn_i) begin
             AxVALID_o_r <= 0;
