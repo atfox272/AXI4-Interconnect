@@ -64,11 +64,25 @@ module dsp_read_channel
     // ---- Read data channel
     output  [SLV_AMT-1:0]                   sa_RREADY_o
 );
+    // Localparam initialization
+    localparam OUTST_CTN_W = $clog2(OUTSTANDING_AMT) + 1;
+    
+    // Internal variable
+    genvar slv_idx;
+    
     // Internal signal declaration
     // -- AW channel to W channel 
-    wire [SLV_ID_W-1:0] AR_R_slv_id;
-    wire                AR_R_disable;
+    wire [SLV_ID_W-1:0]     AR_R_slv_id;
+    wire                    AR_R_disable;
+    // -- AW channel Slave arbitration
+    wire [OUTST_CTN_W-1:0]  Ax_outst_ctn;
     
+    // Combinational logic
+    generate
+    for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin
+        assign sa_AR_outst_full_o[slv_idx] = Ax_outst_ctn >= OUTSTANDING_AMT;
+    end
+    endgenerate
     // Module
     dsp_xADDR_channel #(
         .SLV_AMT(SLV_AMT),
@@ -101,7 +115,7 @@ module dsp_read_channel
         .sa_AxLEN_o(sa_ARLEN_o),
         .sa_AxSIZE_o(sa_ARSIZE_o),
         .sa_AxVALID_o(sa_ARVALID_o),
-        .sa_Ax_outst_full_o(sa_AR_outst_full_o),
+        .sa_Ax_outst_ctn_o(Ax_outst_ctn),
         .dsp_xDATA_slv_id_o(AR_R_slv_id),
         .dsp_xDATA_disable_o(AR_R_disable),
         .dsp_WRESP_slv_id_o(),  // N/C

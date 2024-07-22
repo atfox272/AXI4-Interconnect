@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 // Testbench configuration
-`define NUM_TRANS           40
+`define NUM_TRANS           100
 // Random test mode
 `define BURST_MODE          0
 `define BURST_MODE_WR       2
@@ -602,6 +602,8 @@ module axi_interconnect_tb;
     mailbox #(B_info)   s_drv_B_resp    [MST_AMT];
     // -- -- Read channel 
     mailbox #(Ax_info)  s_drv_AR_info   [MST_AMT];
+    // -- Tracking Monitor
+    int                 trans_count     [MST_AMT];
     
     task automatic sequencer (input int mst_id);
         // Temporary variable
@@ -677,7 +679,8 @@ module axi_interconnect_tb;
                             // Restart other VALID
                             m_ARVALID[mst_id] <= 1'b0;
                             // Wait for Handshake occuring
-                            wait(m_AWREADY[mst_id] == 1); #0.01;
+                            #0.02;
+                            wait(m_AWREADY[mst_id] == 1); #0.02;
                             // Expected B channel
                             B_temp.BID_m    =   Ax_temp.AxID_m;
                             B_temp.BRESP    =   0;  //  Only 'OKAY' 
@@ -697,7 +700,8 @@ module axi_interconnect_tb;
                             // Restart other VALID
                             m_AWVALID[mst_id] <= 1'b0;
                             // Wait for Handshake occuring
-                            wait(m_ARREADY[mst_id] == 1); #0.01;
+                            #0.02;
+                            wait(m_ARREADY[mst_id] == 1); #0.02;
                             // Store information
                             m_drv_AR_info[mst_id].put(Ax_temp);
                         end
@@ -748,9 +752,11 @@ module axi_interconnect_tb;
                         );
                         if(B_sample.BID_m == B_temp.BID_m && B_sample.BRESP == B_temp.BRESP) begin
                             $display("[PASS]: Master%1d - The WR transaction with ID = %2d has completed", mst_id, B_temp.BID_m);
+                            trans_count[mst_id] = trans_count[mst_id] + 1;
                         end
                         else begin
                             $display("[FAIL]: Master%1d - Sample BID = %d and Golden BID = %d", mst_id, B_sample.BID_m, B_temp.BID_m);
+                            $display("[INFO]: Master%1d - The master has completed %3d transactions", mst_id, trans_count[mst_id]);
                             $stop;
                         end
                         // Handshake occurs
@@ -788,6 +794,7 @@ module axi_interconnect_tb;
                             end
                             else begin
                                 $display("[FAIL]: Master%1d - Sample RDATA[%1d] = %h and Golden RDATA = %h", mst_id, i, R_temp.RDATA[i], {1'b0, AR_temp.AxADDR_slv_id, AR_temp.AxADDR_addr} + i*(2**AR_temp.AxSIZE));
+                                $display("[INFO]: Master%1d - The master has completed %3d transactions", mst_id, trans_count[mst_id]);
                                 $stop;
                             end
                             if(RLAST_temp == (i == AR_temp.AxLEN)) begin
@@ -795,10 +802,12 @@ module axi_interconnect_tb;
                             end
                             else begin
                                 $display("[FAIL]: Master%1d - Sample RLAST = %1b and Golden RLAST = %1b", mst_id, RLAST_temp, (i == AR_temp.AxLEN));
+                                $display("[INFO]: Master%1d - The master has completed %3d transactions", mst_id, trans_count[mst_id]);
                                 $stop;
                             end
                         end
                         $display("[PASS]: Master%1d - The RD transaction with ID = %2d has completed", mst_id, AR_temp.AxID_m);
+                        trans_count[mst_id] = trans_count[mst_id] + 1;
                     end
                     else begin
                         // Wait 1 cycle
@@ -853,7 +862,7 @@ module axi_interconnect_tb;
                                 // Pass
                             end
                             else begin
-                                $display("[FAIL]: W channel of Slave%d has receive wrong WDATA[%1d] %h (Expected WDATA: %h)", slv_id, i, W_temp.WDATA[i], {1'b0, AW_temp.AxADDR_slv_id, AW_temp.AxADDR_addr} + i*(2**AW_temp.AxSIZE));
+                                $display("[FAIL]: Slave%1d - Sample WDATA[%1d] = %h and Golden WDATA = %h)", slv_id, i, W_temp.WDATA[i], {1'b0, AW_temp.AxADDR_slv_id, AW_temp.AxADDR_addr} + i*(2**AW_temp.AxSIZE));
                                 $stop;
                             end
                             // WLAST predictor
@@ -861,7 +870,7 @@ module axi_interconnect_tb;
                             
                             end
                             else begin
-                                $display("[FAIL]: W channel of Slave%d has receive wrong WLAST %d (idx: %d, AWLEN: %d)", slv_id, WLAST_temp, i, AW_temp.AxLEN);
+                                $display("[FAIL]: Slave%1d - Wrong sample WLAST = %d (idx: %d, AWLEN: %d)", slv_id, WLAST_temp, i, AW_temp.AxLEN);
                                 $stop;
                             end
                             // Handshake occurs 
@@ -1085,6 +1094,14 @@ module axi_interconnect_tb;
         s_RVALID[slv_id]    <= 1'b1;
     endtask
     
+    initial begin
+        #1600;
+        for(int i = 0; i < MST_AMT; i = i + 1) begin
+            $display("[INFO]: Master%1d - The master has completed %3d transactions", i, trans_count[i]);
+        end
+        #5;
+        $finish;
+    end
 endmodule
 
 

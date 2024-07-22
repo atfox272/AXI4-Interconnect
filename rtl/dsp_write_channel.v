@@ -71,13 +71,28 @@ module dsp_write_channel
     // ---- Write response channel          
     output  [SLV_AMT-1:0]                   sa_BREADY_o
 );
+    // Localparam initialization
+    localparam OUTST_CTN_W = $clog2(OUTSTANDING_AMT) + 1;
+    // Internal variable declaration
+    genvar slv_idx;
+    
     // Internal signal declaration
     // -- AW channel to W channel 
-    wire [SLV_ID_W-1:0] AW_W_slv_id;
-    wire                AW_W_disable;
+    wire [SLV_ID_W-1:0]     AW_W_slv_id;
+    wire                    AW_W_disable;
     // -- AW channel to B channel
-    wire [SLV_ID_W-1:0] AW_B_slv_id;
-    wire                AW_B_shift_en;
+    wire [SLV_ID_W-1:0]     AW_B_slv_id;
+    wire                    AW_B_shift_en;
+    // -- To AW channel Slave arbitration
+    wire [OUTST_CTN_W-1:0]  AW_outst_ctn;
+    wire [OUTST_CTN_W-1:0]  B_outst_ctn;
+    
+    // Combinational logic
+    generate
+    for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin
+        assign sa_AW_outst_full_o[slv_idx] = (AW_outst_ctn + B_outst_ctn) >= OUTSTANDING_AMT;
+    end
+    endgenerate
     
     // Module
     dsp_xADDR_channel #(
@@ -111,7 +126,7 @@ module dsp_write_channel
         .sa_AxLEN_o(sa_AWLEN_o),
         .sa_AxSIZE_o(sa_AWSIZE_o),
         .sa_AxVALID_o(sa_AWVALID_o),
-        .sa_Ax_outst_full_o(sa_AW_outst_full_o),
+        .sa_Ax_outst_ctn_o(AW_outst_ctn),
         .dsp_xDATA_slv_id_o(AW_W_slv_id),
         .dsp_xDATA_disable_o(AW_W_disable),
         .dsp_WRESP_slv_id_o(AW_B_slv_id),
@@ -163,6 +178,7 @@ module dsp_write_channel
         .m_BID_o(m_BID_o),
         .m_BRESP_o(m_BRESP_o),
         .m_BVALID_o(m_BVALID_o),
+        .sa_B_outst_ctn_o(B_outst_ctn),
         .sa_BREADY_o(sa_BREADY_o)
     );
 

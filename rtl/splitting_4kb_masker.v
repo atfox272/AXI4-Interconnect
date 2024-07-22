@@ -46,9 +46,16 @@ module splitting_4kb_masker
     
     // 4KB crossing detector
     assign trans_size = trans_size_sll[SIZE_i];
-    assign trans_size_ext = {{TRANS_SIZE_EXT{1'b0}}, trans_size};
+    generate
+        if(TRANS_SIZE_EXT <= 0) begin
+            assign trans_size_ext = trans_size;
+        end
+        else begin
+            assign trans_size_ext = {{TRANS_SIZE_EXT{1'b0}}, trans_size};
+        end
+    endgenerate
     assign addr_end = {1'b0, ADDR_i[BIT_OFFSET_4KB-1:0]} + trans_size_ext;
-    assign crossing_flag = addr_end[BIT_OFFSET_4KB];
+    assign crossing_flag = (addr_end[BIT_OFFSET_4KB] == 1'b1) & (|addr_end[BIT_OFFSET_4KB-1:0]); // crossing_flag = (addr_end / 4KB) > 1
     // LEN masker
     assign trans_size_rem = addr_end[BIT_OFFSET_4KB-1:0];
     assign LEN_rem_srl = trans_size_rem_srl[SIZE_i];

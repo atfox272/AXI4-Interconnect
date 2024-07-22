@@ -172,7 +172,7 @@ module sa_xADDR_channel
         .RISING_EDGE(1'b1)
     )transaction_booter(
         .clk(ACLK_i),
-        .i(arb_req_remain),
+        .i(AxVALID_o_nxt),
         .o(tbr_trans_boot),
         .rst_n(ARESETn_i)
     );
@@ -190,7 +190,7 @@ module sa_xADDR_channel
         assign fifo_addr_info_wr_en[mst_idx] = dsp_handshake_occur[mst_idx];
         assign {AxID_valid[mst_idx], AxADDR_valid[mst_idx], AxBURST_valid[mst_idx], AxLEN_valid[mst_idx], AxSIZE_valid[mst_idx]} = ADDR_info_valid[mst_idx];
         // ADDR mask controller
-        assign rd_addr_info[mst_idx] = arb_grant_valid[mst_idx] & xADDR_channel_shift_en;
+        assign rd_addr_info[mst_idx] = arb_grant_valid[mst_idx] & xADDR_channel_shift_en & AxVALID_o_nxt;
         assign fifo_addr_info_rd_en[mst_idx] = rd_addr_info[mst_idx] & (~msk_addr_crossing_flag[mst_idx] | msk_split_addr_sel[mst_idx]);
         assign msk_split_addr_sel_nxt[mst_idx] = ~msk_split_addr_sel[mst_idx];
         assign msk_split_addr_sel_en[mst_idx] = rd_addr_info[mst_idx] & msk_addr_crossing_flag[mst_idx];

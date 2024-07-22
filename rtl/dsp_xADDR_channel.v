@@ -3,6 +3,7 @@ module dsp_xADDR_channel
     // Dispatcher configuration
     parameter SLV_AMT           = 2,
     parameter OUTSTANDING_AMT   = 8,
+    parameter OUTST_CTN_W       = $clog2(OUTSTANDING_AMT) + 1,
     // Transaction configuration
     parameter DATA_WIDTH        = 32,
     parameter ADDR_WIDTH        = 32,
@@ -46,7 +47,7 @@ module dsp_xADDR_channel
     output  [TRANS_DATA_LEN_W*SLV_AMT-1:0]  sa_AxLEN_o,
     output  [TRANS_DATA_SIZE_W*SLV_AMT-1:0] sa_AxSIZE_o,
     output  [SLV_AMT-1:0]                   sa_AxVALID_o,
-    output  [SLV_AMT-1:0]                   sa_Ax_outst_full_o, // The Dispatcher is full
+    output  [OUTST_CTN_W-1:0]               sa_Ax_outst_ctn_o,
     // -- To xDATA channel Dispatcher
     output  [SLV_ID_W-1:0]                  dsp_xDATA_slv_id_o,
     output                                  dsp_xDATA_disable_o,
@@ -67,7 +68,6 @@ module dsp_xADDR_channel
     wire                            fifo_xa_order_wr_en;
     wire                            fifo_xa_order_rd_en;
     wire                            fifo_xa_order_empty;
-    wire                            fifo_xa_order_full;
     // -- Handshake detector
     wire                            Ax_handshake_occcur;
     wire                            xDATA_handshake_occur;
@@ -96,9 +96,10 @@ module dsp_xADDR_channel
         .rd_valid_i(fifo_xa_order_rd_en),
         .wr_valid_i(fifo_xa_order_wr_en),
         .empty_o(fifo_xa_order_empty),
-        .full_o(fifo_xa_order_full),
+        .full_o(),
         .almost_empty_o(),
         .almost_full_o(),
+        .counter(sa_Ax_outst_ctn_o),
         .rst_n(ARESETn_i)
     );
     
@@ -126,7 +127,6 @@ module dsp_xADDR_channel
             assign sa_AxLEN_o[TRANS_DATA_LEN_W*(slv_idx+1)-1-:TRANS_DATA_LEN_W]     = m_AxLEN_i;
             assign sa_AxSIZE_o[TRANS_DATA_SIZE_W*(slv_idx+1)-1-:TRANS_DATA_SIZE_W]  = m_AxSIZE_i;
             assign sa_AxVALID_o[slv_idx]                                            = m_AxVALID_i;
-            assign sa_Ax_outst_full_o[slv_idx]                                      = fifo_xa_order_full;
         end
     endgenerate
     // -- -- Output to xDATA dispatcher

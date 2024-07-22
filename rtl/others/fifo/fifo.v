@@ -1,8 +1,9 @@
 module fifo
     #(
     parameter  DATA_WIDTH    = 8,
-    parameter  FIFO_DEPTH    = 32
-    
+    parameter  FIFO_DEPTH    = 32,
+    // Do not configure
+    parameter  ADDR_WIDTH    = $clog2(FIFO_DEPTH)
     )
     (
     input                       clk,
@@ -17,10 +18,10 @@ module fifo
     output                      full_o,
     output                      almost_empty_o,
     output                      almost_full_o,
+    
+    output  [ADDR_WIDTH:0]      counter,
     input                       rst_n
     );
-    // Localparam declaration
-    localparam ADDR_WIDTH = $clog2(FIFO_DEPTH);
     // Internal variable declaration
     genvar addr;
     
@@ -49,6 +50,7 @@ module fifo
     assign full_o = (wr_addr_map == rd_addr_map) & (wr_addr[ADDR_WIDTH] ^ rd_addr[ADDR_WIDTH]);
     assign almost_full_o = wr_addr_map + 1'b1 == rd_addr_map;
     
+    assign counter = wr_addr_map - rd_addr_map;
     generate
         for(addr = 0; addr < FIFO_DEPTH; addr = addr + 1) begin
             assign buffer_nxt[addr] = (wr_addr_map == addr) ? data_i : buffer[addr];

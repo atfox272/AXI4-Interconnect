@@ -3,6 +3,7 @@ module dsp_WRESP_channel
     // Dispatcher configuration
     parameter SLV_AMT           = 2,
     parameter OUTSTANDING_AMT   = 8,
+    parameter OUTST_CTN_W       = $clog2(OUTSTANDING_AMT) + 1,
     // Transaction configuration
     parameter DATA_WIDTH        = 32,
     parameter ADDR_WIDTH        = 32,
@@ -25,7 +26,7 @@ module dsp_WRESP_channel
     // -- -- Write response channel
     input                                   m_BREADY_i,
     // -- To Slave Arbitration
-    // -- -- Write response channel (master)
+    // -- -- Write response channel
     input   [TRANS_MST_ID_W*SLV_AMT-1:0]    sa_BID_i,
     input   [TRANS_WR_RESP_W*SLV_AMT-1:0]   sa_BRESP_i,
     input   [SLV_AMT-1:0]                   sa_BVALID_i,
@@ -39,13 +40,14 @@ module dsp_WRESP_channel
     output  [TRANS_WR_RESP_W-1:0]           m_BRESP_o,
     output                                  m_BVALID_o,
     // -- To Slave Arbitration
+    // -- -- Write address channel
+    output  [OUTST_CTN_W-1:0]               sa_B_outst_ctn_o,
     // -- -- Write response channel
     output  [SLV_AMT-1:0]                   sa_BREADY_o
 );
     // Local parameter
     localparam SLV_INFO_W = SLV_ID_W;
     localparam RESP_INFO_W = TRANS_MST_ID_W + TRANS_WR_RESP_W;
-    
     // Internal variable declaration
     genvar slv_idx;
     
@@ -84,6 +86,7 @@ module dsp_WRESP_channel
         .full_o(),
         .almost_empty_o(),
         .almost_full_o(),
+        .counter(sa_B_outst_ctn_o),
         .rst_n(ARESETn_i) 
     );
     // -- Slave Response FIFO
