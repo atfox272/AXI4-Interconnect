@@ -14,7 +14,7 @@
 
 // Testbench configuration
 // -- Mode
-parameter                       TB_MODE                 = `ALL_RANDOM_MODE; 
+parameter                       TB_MODE                 = `BURST_MODE; 
 // -- Delay
 parameter                       RREADY_STALL_MAX        = 5;
 parameter                       ARREADY_STALL_MAX       = 5;

@@ -185,7 +185,7 @@ module sa_WDATA_channel
             assign dsp_WDATA_valid[mst_idx]     = DATA_info_valid[mst_idx];
             assign dsp_WVALID_dec[mst_idx]      = dsp_WVALID_i[mst_idx] & dsp_slv_sel_i[mst_idx];
             assign fifo_wdata_wr_en[mst_idx]    = dsp_handshake_occur[mst_idx];
-            assign fifo_wdata_rd_en[mst_idx]    = mst_sel[mst_idx] & WDATA_channel_shift_en;
+            assign fifo_wdata_rd_en[mst_idx]    = mst_sel[mst_idx] & WDATA_channel_shift_en & transaction_en;
             // Handshake detector
             assign dsp_handshake_occur[mst_idx] = dsp_WVALID_dec[mst_idx] & dsp_WREADY_o[mst_idx];
             // Dispatcher Interface 
@@ -195,7 +195,7 @@ module sa_WDATA_channel
     // Booting condition 
     assign transaction_en           = ~fifo_wdata_empt[Ax_mst_id_valid] & ~fifo_order_empt;
     // Transfer counter
-    assign shift_en_trans_ctn       = ~fifo_wdata_empt[Ax_mst_id_valid] & WDATA_channel_shift_en;
+    assign shift_en_trans_ctn       = transaction_en & WDATA_channel_shift_en;
     assign transfer_ctn_incr        = transfer_ctn_r + 1'b1;
     assign transfer_ctn_nxt         = (Ax_AxLEN_valid == transfer_ctn_r) ? {TRANS_DATA_LEN_W{1'b0}} : transfer_ctn_incr;
     // Handshake detector
