@@ -105,6 +105,7 @@ module dsp_WRESP_channel
                 .full_o(fifo_wresp_full[slv_idx]),
                 .almost_empty_o(),
                 .almost_full_o(),
+                .counter(),
                 .rst_n(ARESETn_i) 
             );
         end

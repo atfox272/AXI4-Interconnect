@@ -47,7 +47,7 @@ module sa_RDATA_channel
 );
 
     // Local parameters initialization
-    localparam FILTER_INFO_W = TRANS_SLV_ID_W;
+    localparam FILTER_INFO_W = TRANS_SLV_ID_W + 1; // crossing flag + transaction ID
     
     // Internal variable declaration 
     genvar mst_idx;
@@ -61,7 +61,8 @@ module sa_RDATA_channel
     wire                            fifo_filter_full;
     wire                            fifo_filter_empty;
     // ---- Write response filter
-    wire    [TRANS_SLV_ID_W-1:0]    filter_ARID;
+    wire    [TRANS_SLV_ID_W-1:0]    ARID_valid;
+    wire    [TRANS_SLV_ID_W-1:0]    crossing_flag_valid;
     wire                            filter_ARID_match;
     wire                            filter_condition;
     wire                            filter_RLAST;
@@ -87,18 +88,19 @@ module sa_RDATA_channel
         .full_o(fifo_filter_full),
         .almost_empty_o(),
         .almost_full_o(),
+        .counter(),
         .rst_n(ARESETn_i)
     );
     
     // Combinational logic
     // -- FIFO WRESP filter
-    assign filter_info = AR_AxID_i;
-    assign fifo_filter_wr_en = AR_shift_en_i & AR_crossing_flag_i;
-    assign fifo_filter_rd_en = slv_handshake_occur & filter_condition & s_RLAST_i;
+    assign filter_info = {AR_crossing_flag_i, AR_AxID_i};
+    assign fifo_filter_wr_en = AR_shift_en_i;
+    assign fifo_filter_rd_en = slv_handshake_occur & s_RLAST_i;
     // -- Write response filter
-    assign filter_ARID = filter_info_valid;
-    assign filter_ARID_match = filter_ARID == s_RID_i;
-    assign filter_condition = filter_ARID_match & ~fifo_filter_empty;
+    assign {crossing_flag_valid, ARID_valid} = filter_info_valid;
+    assign filter_ARID_match = ARID_valid == s_RID_i;
+    assign filter_condition = filter_ARID_match & (~fifo_filter_empty) & crossing_flag_valid;
     assign filter_RLAST = s_RLAST_i & ~filter_condition;
     // -- Handshake detector
     assign slv_handshake_occur = s_RVALID_i & s_RREADY_o;

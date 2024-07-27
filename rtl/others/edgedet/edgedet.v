@@ -5,13 +5,14 @@ module edgedet
 (
     input   clk,
     input   i,
+    input   en,
     output  o,
     input   rst_n
 );
     reg prev_i;
     always @(posedge clk) begin
         if(~rst_n) prev_i <= 0;
-        else prev_i <= i;
+        else if(en) prev_i <= i;
     end
     generate
         if(RISING_EDGE) begin

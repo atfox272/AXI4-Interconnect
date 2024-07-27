@@ -39,7 +39,7 @@ module sa_WRESP_channel
     output                                  AW_stall_o
 );
     // Local parameters initialization
-    localparam FILTER_INFO_W = TRANS_SLV_ID_W;
+    localparam FILTER_INFO_W = TRANS_SLV_ID_W + 1;  // crossing flag + Transaction ID
     
     // Internal variable declaration 
     genvar mst_idx;
@@ -53,7 +53,8 @@ module sa_WRESP_channel
     wire                            fifo_filter_full;
     wire                            fifo_filter_empty;
     // ---- Write response filter
-    wire    [TRANS_SLV_ID_W-1:0]    filter_AWID;
+    wire    [TRANS_SLV_ID_W-1:0]    AWID_valid;
+    wire    [TRANS_SLV_ID_W-1:0]    crossing_flag_valid;
     wire                            filter_AWID_match;
     wire                            filter_condition;
     wire                            filter_BVALID;
@@ -80,17 +81,20 @@ module sa_WRESP_channel
         .full_o(fifo_filter_full),
         .almost_empty_o(),
         .almost_full_o(),
+        .counter(),
         .rst_n(ARESETn_i)
     );
     
     // Combinational logic
     // -- FIFO WRESP filter
-    assign filter_info = AW_AxID_i;
-    assign fifo_filter_wr_en = AW_shift_en_i & AW_crossing_flag_i;
-    assign fifo_filter_rd_en = slv_handshake_occur & filter_condition;
+    assign filter_info = {AW_crossing_flag_i, AW_AxID_i};
+//    assign fifo_filter_wr_en = AW_shift_en_i & AW_crossing_flag_i;
+//    assign fifo_filter_rd_en = slv_handshake_occur & filter_condition;
+    assign fifo_filter_wr_en = AW_shift_en_i;
+    assign fifo_filter_rd_en = slv_handshake_occur;
     // -- Write response filter
-    assign filter_AWID = filter_info_valid;
-    assign filter_AWID_match = filter_AWID == s_BID_i;
+    assign {crossing_flag_valid, AWID_valid} = filter_info_valid;
+    assign filter_AWID_match = (AWID_valid == s_BID_i) & crossing_flag_valid;
     assign filter_condition = filter_AWID_match & ~fifo_filter_empty;
     assign filter_BVALID = s_BVALID_i & ~filter_condition;
     assign filter_BREADY_gen = dsp_BREADY_valid | filter_condition;

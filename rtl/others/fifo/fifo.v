@@ -50,7 +50,7 @@ module fifo
     assign full_o = (wr_addr_map == rd_addr_map) & (wr_addr[ADDR_WIDTH] ^ rd_addr[ADDR_WIDTH]);
     assign almost_full_o = wr_addr_map + 1'b1 == rd_addr_map;
     
-    assign counter = wr_addr_map - rd_addr_map;
+    assign counter = wr_addr - rd_addr;
     generate
         for(addr = 0; addr < FIFO_DEPTH; addr = addr + 1) begin
             assign buffer_nxt[addr] = (wr_addr_map == addr) ? data_i : buffer[addr];

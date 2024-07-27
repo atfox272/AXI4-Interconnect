@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 // Testbench configuration
-`define NUM_TRANS           50000
+`define NUM_TRANS           100000
 // Directed test
 `define DIRECTED_TEST       5       
 // Random test mode
@@ -8,13 +8,12 @@
 `define BURST_MODE_WR       2
 `define BURST_MODE_RD       3
 `define ARBITRATION_MODE    1
-`define ALL_RANDOM_MODE     4
 
 `define MAX_LENGTH          8
 
 // Testbench configuration
 // -- Mode
-parameter                       TB_MODE                 = `ALL_RANDOM_MODE; 
+parameter                       TB_MODE                 = `BURST_MODE_WR; 
 // -- Delay
 parameter                       RREADY_STALL_MAX        = 5;
 parameter                       ARREADY_STALL_MAX       = 5;
@@ -22,7 +21,7 @@ parameter                       AWREADY_STALL_MAX       = 5;
 parameter                       WREADY_STALL_MAX        = 5;
 parameter                       BREADY_STALL_MAX        = 5;
 // -- End time
-parameter                       END_TIME                = (1 + 6 + 2 + WREADY_STALL_MAX/2 + 2)*2*`NUM_TRANS*4;
+parameter                       END_TIME                = (1 + 6 + 2 + WREADY_STALL_MAX/2 + 2)*2*100000*4;
 
 // Interconnect configuration
 parameter                       MST_AMT                 = 4;
@@ -131,11 +130,6 @@ class m_trans_random #(int mode = `BURST_MODE);
             m_trans_wr_rd               == 0;
             m_AxBURST                   == 1;                 -
             m_AxADDR_slv_id             dist{0 :/ 1, 1:/ 1};
-            m_AxADDR_addr%(1<<m_AxSIZE) == 0;   // All transfers must be aligned
-        }
-        else if(mode == `ALL_RANDOM_MODE) {
-            m_trans_avail   dist{0 :/ (100 - m_trans_rate), 1:/ m_trans_rate};// rate = trans_rate % 
-            m_AxBURST                   == 1;                 
             m_AxADDR_addr%(1<<m_AxSIZE) == 0;   // All transfers must be aligned
         }
     }
@@ -1092,7 +1086,7 @@ module axi_interconnect_tb;
            end
            $display("|----------------------------------------------------------------|");
         end
-        else if(mode == `BURST_MODE | mode == `BURST_MODE_WR | mode == `BURST_MODE_RD | mode == `ALL_RANDOM_MODE) begin
+        else if(mode == `BURST_MODE | mode == `BURST_MODE_WR | mode == `BURST_MODE_RD) begin
             
             // Print transaction completion
            // Print stall  

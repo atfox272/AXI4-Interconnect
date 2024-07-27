@@ -130,6 +130,7 @@ module sa_xADDR_channel
                 .full_o(fifo_addr_info_full[mst_idx]),
                 .almost_empty_o(),
                 .almost_full_o(),
+                .counter(),
                 .rst_n(ARESETn_i)
             );
             // 4KB masker
@@ -167,15 +168,21 @@ module sa_xADDR_channel
         .i(arb_grant_valid),
         .o(granted_mst_id)
     );
-    edgedet 
-    #(
-        .RISING_EDGE(1'b1)
-    )transaction_booter(
-        .clk(ACLK_i),
-        .i(AxVALID_o_nxt),
-        .o(tbr_trans_boot),
-        .rst_n(ARESETn_i)
-    );
+//    edgedet 
+//    #(
+//        .RISING_EDGE(1'b1)
+//    )transaction_booter(
+//        .clk(ACLK_i),
+//        .i(AxVALID_o_nxt),
+////        .en(1'b1),
+//        .en(~AxVALID_o_r),
+//        .o(tbr_trans_boot),
+//        .rst_n(ARESETn_i)
+//    );
+    //////////////////////////////////////////
+    assign tbr_trans_boot = AxVALID_o_nxt & ~AxVALID_o_r;
+    //////////////////////////////////////////
+    
     // Combinational logic
     generate
     for(mst_idx = 0; mst_idx < MST_AMT; mst_idx = mst_idx + 1) begin
@@ -224,7 +231,7 @@ module sa_xADDR_channel
     assign xDATA_mst_id_o = AxID_o_nxt[TRANS_SLV_ID_W-1-:MST_ID_W];
     assign xDATA_crossing_flag_o = msk_addr_crossing_valid[granted_mst_id];
     assign xDATA_AxLEN_o = AxLEN_o_nxt;
-    assign xDATA_fifo_order_wr_en_o = AxVALID_o_nxt;
+    assign xDATA_fifo_order_wr_en_o = AxVALID_o_nxt & x_channel_shift_en;
     // Flip-flop logic
     generate
     // -- ADDR mask controller

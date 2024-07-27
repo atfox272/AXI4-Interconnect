@@ -111,6 +111,7 @@ module sa_WDATA_channel
         .full_o(fifo_order_full),
         .almost_empty_o(),
         .almost_full_o(),
+        .counter(),
         .rst_n(ARESETn_i)
     );
 //    onehot_encoder #(
@@ -120,22 +121,34 @@ module sa_WDATA_channel
 //        .i(Ax_mst_id_valid),
 //        .o(Ax_mst_id_valid)
 //    );
-    edgedet #(
-        .RISING_EDGE(1'b1)
-    )transaction_booter(
-        .clk(ACLK_i),
-        .i(transaction_en),
-        .o(transaction_boot),
-        .rst_n(ARESETn_i)
-    );
+
+//    edgedet #(
+//        .RISING_EDGE(1'b1)
+//    )transaction_booter(
+//        .clk(ACLK_i),
+//        .i(transaction_en),
+//        .en(1'b1),
+//        .o(transaction_boot),
+//        .rst_n(ARESETn_i)
+//    );    
+    ////////////////////////////////////////////////////////////////////////////
+    assign transaction_boot = (~s_WVALID_o) & s_WVALID_o_nxt;
+    ////////////////////////////////////////////////////////////////////////////
+    
     edgedet #(
         .RISING_EDGE(1'b0)
     )transaction_stopper(
         .clk(ACLK_i),
         .i(transaction_en),
+        .en(WDATA_channel_shift_en),
         .o(transaction_stop),
         .rst_n(ARESETn_i)
     );
+    
+    ////////////////////////////////////////////////////////////////////////////
+//    assign transaction_stop = s_WVALID_o & (~s_WVALID_o_nxt);
+    ////////////////////////////////////////////////////////////////////////////
+    
     generate
         for(mst_idx = 0; mst_idx < MST_AMT; mst_idx = mst_idx + 1) begin
             fifo 
@@ -152,6 +165,7 @@ module sa_WDATA_channel
                 .full_o(fifo_wdata_full[mst_idx]),
                 .almost_empty_o(),
                 .almost_full_o(),
+                .counter(),
                 .rst_n(ARESETn_i)
             );
         end
@@ -187,7 +201,7 @@ module sa_WDATA_channel
     // Handshake detector
     assign slv_handshake_occur      = s_WVALID_o_r & s_WREADY_i;
     // Output control 
-    assign WDATA_channel_shift_en   = transaction_boot | transaction_stop | slv_handshake_occur;
+    assign WDATA_channel_shift_en   = transaction_boot | (transaction_stop & slv_handshake_occur) | slv_handshake_occur;
     assign AW_stall_o               = fifo_order_full;
     assign s_WVALID_o_nxt           = transaction_en;
     assign s_WLAST_o_nxt            = (Ax_AxLEN_valid == transfer_ctn_r) & transaction_en;

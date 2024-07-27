@@ -82,6 +82,7 @@ module dsp_RDATA_channel
             .full_o(fifo_rdata_full[slv_idx]),
             .almost_empty_o(),
             .almost_full_o(),
+            .counter(),
             .rst_n(ARESETn_i)
         );
     end
