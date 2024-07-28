@@ -90,7 +90,7 @@ module dsp_write_channel
     // Combinational logic
     generate
     for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin
-        assign sa_AW_outst_full_o[slv_idx] = (AW_outst_ctn + B_outst_ctn) >= OUTSTANDING_AMT;
+        assign sa_AW_outst_full_o[slv_idx] = (AW_outst_ctn + B_outst_ctn) == OUTSTANDING_AMT;
     end
     endgenerate
     

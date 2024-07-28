@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 // Testbench configuration
-`define NUM_TRANS           50000
+`define NUM_TRANS           100000
 // Directed test
 `define DIRECTED_TEST       5       
 // Random test mode
@@ -9,12 +9,14 @@
 `define BURST_MODE_RD       3
 `define ARBITRATION_MODE    1
 `define ALL_RANDOM_MODE     4
+// Custom mode
+`define CUSTOM_MODE         6
 
 `define MAX_LENGTH          8
 
 // Testbench configuration
 // -- Mode
-parameter                       TB_MODE                 = `BURST_MODE; 
+parameter                       TB_MODE                 = `CUSTOM_MODE; 
 // -- Delay
 parameter                       RREADY_STALL_MAX        = 5;
 parameter                       ARREADY_STALL_MAX       = 5;
@@ -27,7 +29,7 @@ parameter                       END_TIME                = (1 + 6 + 2 + WREADY_ST
 // Interconnect configuration
 parameter                       MST_AMT                 = 4;
 parameter                       SLV_AMT                 = 2;
-parameter                       OUTSTANDING_AMT         = 8;
+parameter                       OUTSTANDING_AMT         = 16;
 parameter [0:(MST_AMT*32)-1]    MST_WEIGHT              = {32'd5, 32'd3, 32'd1, 32'd1};
 int                             mst_need_req[MST_AMT]   = {50, 30, 10, 10};
 parameter                       MST_ID_W                = $clog2(MST_AMT);
@@ -136,6 +138,13 @@ class m_trans_random #(int mode = `BURST_MODE);
         else if(mode == `ALL_RANDOM_MODE) {
             m_trans_avail   dist{0 :/ (100 - m_trans_rate), 1:/ m_trans_rate};// rate = trans_rate % 
             m_AxBURST                   == 1;                 
+            m_AxADDR_addr%(1<<m_AxSIZE) == 0;   // All transfers must be aligned
+        }
+        else if(mode == `CUSTOM_MODE) {
+            m_trans_avail               == 1;
+            m_trans_wr_rd               == 1;
+            m_AxBURST                   == 1;                 
+            m_AxADDR_slv_id             dist{0 :/ 1, 1:/ 1};
             m_AxADDR_addr%(1<<m_AxSIZE) == 0;   // All transfers must be aligned
         }
     }
@@ -1092,7 +1101,7 @@ module axi_interconnect_tb;
            end
            $display("|----------------------------------------------------------------|");
         end
-        else if(mode == `BURST_MODE | mode == `BURST_MODE_WR | mode == `BURST_MODE_RD | mode == `ALL_RANDOM_MODE) begin
+        else if(mode == `BURST_MODE | mode == `BURST_MODE_WR | mode == `BURST_MODE_RD | mode == `ALL_RANDOM_MODE | mode == `CUSTOM_MODE) begin
             
             // Print transaction completion
            // Print stall  

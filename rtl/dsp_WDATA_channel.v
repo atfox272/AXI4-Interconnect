@@ -49,7 +49,7 @@ module dsp_WDATA_channel
     assign slv_id_valid = {dsp_AW_disable_i, dsp_AW_slv_id_i};
     // -- Output
     // -- -- Output to Master
-    assign m_WREADY_o = (dsp_AW_disable_i) ? 1'b0 : sa_WREADY_i[dsp_AW_slv_id_i];
+    assign m_WREADY_o = (~dsp_AW_disable_i) & sa_WREADY_i[dsp_AW_slv_id_i];
     // -- -- Output to Slave arbitration
     generate
         for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin
