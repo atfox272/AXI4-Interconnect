@@ -1,0 +1,1 @@
+./../tb/axi_interconnect_tb.sv

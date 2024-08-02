@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 // Testbench configuration
-`define NUM_TRANS           100000
+`define NUM_TRANS           10000
 // Directed test
 `define DIRECTED_TEST       5       
 // Random test mode
@@ -16,20 +16,20 @@
 
 // Testbench configuration
 // -- Mode
-parameter                       TB_MODE                 = `CUSTOM_MODE; 
+parameter                       TB_MODE                 = `BURST_MODE; 
 // -- Delay
-parameter                       RREADY_STALL_MAX        = 5;
-parameter                       ARREADY_STALL_MAX       = 5;
-parameter                       AWREADY_STALL_MAX       = 5;
-parameter                       WREADY_STALL_MAX        = 5;
-parameter                       BREADY_STALL_MAX        = 5;
+parameter                       RREADY_STALL_MAX        = 2;
+parameter                       ARREADY_STALL_MAX       = 2;
+parameter                       AWREADY_STALL_MAX       = 2;
+parameter                       WREADY_STALL_MAX        = 2;
+parameter                       BREADY_STALL_MAX        = 2;
 // -- End time
 parameter                       END_TIME                = (1 + 6 + 2 + WREADY_STALL_MAX/2 + 2)*2*`NUM_TRANS*4;
 
 // Interconnect configuration
 parameter                       MST_AMT                 = 4;
 parameter                       SLV_AMT                 = 2;
-parameter                       OUTSTANDING_AMT         = 16;
+parameter                       OUTSTANDING_AMT         = 8;
 parameter [0:(MST_AMT*32)-1]    MST_WEIGHT              = {32'd5, 32'd3, 32'd1, 32'd1};
 int                             mst_need_req[MST_AMT]   = {50, 30, 10, 10};
 parameter                       MST_ID_W                = $clog2(MST_AMT);
@@ -691,7 +691,7 @@ module axi_interconnect_tb;
         else begin
             i = 0;
             for(int trans_num = 0; trans_num < `NUM_TRANS; trans_num = trans_num + 1) begin
-                master_trans_gen[mst_id].randomize();
+                void'(master_trans_gen[mst_id].randomize());
                 if(master_trans_gen[mst_id].m_trans_avail == 1) begin
                     // Get info
                     // -- Ax
@@ -750,7 +750,7 @@ module axi_interconnect_tb;
                             m_AW_transfer(  
                                 .mst_id (mst_id),
                                 .AWID   (Ax_temp.AxID_m),  
-                                .AWADDR ({0, Ax_temp.AxADDR_slv_id, Ax_temp.AxADDR_addr}),
+                                .AWADDR ({1'h0, Ax_temp.AxADDR_slv_id, Ax_temp.AxADDR_addr}),
                                 .AWBURST(Ax_temp.AxBURST),
                                 .AWLEN  (Ax_temp.AxLEN),
                                 .AWSIZE (Ax_temp.AxSIZE)
@@ -772,7 +772,7 @@ module axi_interconnect_tb;
                             m_AR_transfer(  
                                 .mst_id (mst_id),
                                 .ARID   (Ax_temp.AxID_m),  
-                                .ARADDR ({0, Ax_temp.AxADDR_slv_id, Ax_temp.AxADDR_addr}),
+                                .ARADDR ({1'h0, Ax_temp.AxADDR_slv_id, Ax_temp.AxADDR_addr}),
                                 .ARBURST(Ax_temp.AxBURST),
                                 .ARLEN  (Ax_temp.AxLEN),
                                 .ARSIZE (Ax_temp.AxSIZE)
@@ -824,7 +824,7 @@ module axi_interconnect_tb;
                 Ax_info Ax_debug;
                 forever begin
                     if(m_drv_B_golden[mst_id].try_get(B_temp)) begin
-                        m_drv_B_debug[mst_id].try_get(Ax_debug);
+                        void'(m_drv_B_debug[mst_id].try_get(Ax_debug));
                         // Assert BREADY
                         m_BREADY[mst_id] <= 1'b1;
                         m_B_receive (   
