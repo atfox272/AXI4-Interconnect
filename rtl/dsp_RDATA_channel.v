@@ -39,7 +39,10 @@ module dsp_RDATA_channel
     output                                  m_RVALID_o,
     // -- To Slave Arbitration
     // ---- Read data channel
-    output  [SLV_AMT-1:0]                   sa_RREADY_o
+    output  [SLV_AMT-1:0]                   sa_RREADY_o,
+    // -- To DSP AR chanenl
+    output                                  dsp_RVALID_q1_o,
+    output                                  dsp_RREADY_q1_o
 );
     // Local parameter 
     localparam DATA_INFO_W = TRANS_MST_ID_W + DATA_WIDTH + TRANS_WR_RESP_W + 1;   // RID_W + DATA_W + RRESP + RLAST_W
@@ -63,6 +66,17 @@ module dsp_RDATA_channel
     wire   [DATA_WIDTH-1:0]     sa_RDATA_valid      [SLV_AMT-1:0];
     wire   [TRANS_WR_RESP_W-1:0]sa_RRESP_valid      [SLV_AMT-1:0];
     wire                        sa_RLAST_valid      [SLV_AMT-1:0];
+    // -- Master skid buffer 
+    wire    [DATA_INFO_W-1:0]       msb_bwd_data;
+    wire                            msb_bwd_valid;
+    wire                            msb_bwd_ready;
+    wire    [DATA_INFO_W-1:0]       msb_fwd_data;
+    wire                            msb_fwd_valid;
+    wire                            msb_fwd_ready;
+    wire    [TRANS_MST_ID_W-1:0]    msb_fwd_RID;
+    wire    [DATA_WIDTH-1:0]        msb_fwd_RDATA;
+    wire    [TRANS_WR_RESP_W-1:0]   msb_fwd_RRESP;
+    wire                            msb_fwd_RLAST;
     
     // Module
     // -- RDATA FIFO
@@ -87,6 +101,21 @@ module dsp_RDATA_channel
         );
     end
     endgenerate
+    // -- Master skid buffer
+    skid_buffer #(
+        .SBUF_TYPE(0),
+        .DATA_WIDTH(DATA_INFO_W)
+    ) mst_skid_buffer (
+        .clk        (ACLK_i),
+        .rst_n      (ARESETn_i),
+        .bwd_data_i (msb_bwd_data),
+        .bwd_valid_i(msb_bwd_valid),
+        .fwd_ready_i(msb_fwd_ready),
+        .fwd_data_o (msb_fwd_data),
+        .bwd_ready_o(msb_bwd_ready),
+        .fwd_valid_o(msb_fwd_valid)
+    );
+    
     // Combinational logic
     // -- RDATA FIFO
     generate
@@ -103,19 +132,26 @@ module dsp_RDATA_channel
             assign sa_handshake_occur[slv_idx] = sa_RVALID_i[slv_idx] & sa_RREADY_o[slv_idx];
         end
     endgenerate
-    assign m_handshake_occur = m_RVALID_o & m_RREADY_i;
+    assign m_handshake_occur = msb_bwd_valid & msb_bwd_ready;
     // -- Output
     // -- -- Output to Master
-    assign m_RID_o = sa_RID_valid[dsp_AR_slv_id_i];
-    assign m_RDATA_o = sa_RDATA_valid[dsp_AR_slv_id_i];
-    assign m_RRESP_o = sa_RRESP_valid[dsp_AR_slv_id_i];
-    assign m_RLAST_o = sa_RLAST_valid[dsp_AR_slv_id_i];
-    assign m_RVALID_o = ~(fifo_rdata_empty[dsp_AR_slv_id_i] | dsp_AR_disable_i);
+    assign m_RID_o = msb_fwd_RID;
+    assign m_RDATA_o = msb_fwd_RDATA;
+    assign m_RRESP_o = msb_fwd_RRESP;
+    assign m_RLAST_o = msb_fwd_RLAST;
+    assign m_RVALID_o = msb_fwd_valid;
     // -- -- Output to Slave arbitration
     generate
         for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin
             assign sa_RREADY_o[slv_idx]= ~fifo_rdata_full[slv_idx];
         end
     endgenerate
-
+    // -- -- Output to DSP AR
+    assign dsp_RVALID_q1_o  = msb_bwd_valid;
+    assign dsp_RREADY_q1_o  = msb_bwd_ready;
+    // -- Master skid buffer 
+    assign msb_bwd_data     = {sa_RID_valid[dsp_AR_slv_id_i], sa_RDATA_valid[dsp_AR_slv_id_i], sa_RRESP_valid[dsp_AR_slv_id_i], sa_RLAST_valid[dsp_AR_slv_id_i]};
+    assign msb_bwd_valid    = ~(fifo_rdata_empty[dsp_AR_slv_id_i] | dsp_AR_disable_i);
+    assign msb_fwd_ready    = m_RREADY_i;
+    assign {msb_fwd_RID, msb_fwd_RDATA, msb_fwd_RRESP, msb_fwd_RLAST} = msb_fwd_data;
 endmodule

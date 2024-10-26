@@ -11,6 +11,8 @@ module dsp_WDATA_channel
 )
 (
     // Input declaration
+    input                                   ACLK_i,
+    input                                   ARESETn_i,
     // -- To Master (slave interface of the interconnect)
     // ---- Write data channel
     input   [DATA_WIDTH-1:0]                m_WDATA_i,
@@ -31,10 +33,14 @@ module dsp_WDATA_channel
     output  [DATA_WIDTH*SLV_AMT-1:0]        sa_WDATA_o,
     output  [SLV_AMT-1:0]                   sa_WLAST_o,
     output  [SLV_AMT-1:0]                   sa_WVALID_o,
-    output  [SLV_AMT-1:0]                   sa_WDATA_sel_o    // Slave Arbitration selection
+    output  [SLV_AMT-1:0]                   sa_WDATA_sel_o,    // Slave Arbitration selection
+    // -- To DSP AW channel
+    output                                  dsp_AW_WVALID_o,
+    output                                  dsp_AW_WREADY_o
 );
     // Local parameters
-    localparam SLV_ID_VALID_W = SLV_ID_W + 1;   // SLV_ID_W + 1bit (~valid)
+    localparam SLV_ID_VALID_W   = SLV_ID_W + 1;   // SLV_ID_W + 1bit (~valid)
+    localparam W_INFO_W         = DATA_WIDTH + 1;
     
     // Internal variable declaration
     genvar slv_idx;
@@ -43,24 +49,17 @@ module dsp_WDATA_channel
     // -- Slave ID decoder
     wire    [SLV_ID_VALID_W-1:0]    slv_id_valid;
     wire    [SLV_AMT-1:0]           slv_sel;
+    // -- Master skid buffer
+    wire    [W_INFO_W-1:0]          msb_bwd_data;
+    wire                            msb_bwd_valid;
+    wire                            msb_bwd_ready;
+    wire    [W_INFO_W-1:0]          msb_fwd_data;
+    wire                            msb_fwd_valid;
+    wire                            msb_fwd_ready;
+    wire    [DATA_WIDTH-1:0]        msb_fwd_WDATA;
+    wire                            msb_fwd_WLAST;
     
-    // Combinational logic
-    // -- Slave ID decoder
-    assign slv_id_valid = {dsp_AW_disable_i, dsp_AW_slv_id_i};
-    // -- Output
-    // -- -- Output to Master
-    assign m_WREADY_o = (~dsp_AW_disable_i) & sa_WREADY_i[dsp_AW_slv_id_i];
-    // -- -- Output to Slave arbitration
-    generate
-        for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin
-            assign sa_WDATA_o[DATA_WIDTH*(slv_idx+1)-1-:DATA_WIDTH] = m_WDATA_i;
-            assign sa_WLAST_o[slv_idx] = m_WLAST_i;
-            assign sa_WVALID_o[slv_idx] = m_WVALID_i;
-            assign sa_WDATA_sel_o[slv_idx] = slv_sel[slv_idx];
-        end
-    endgenerate
-    
-    // Module 
+    // Internal module
     onehot_decoder #(
         .INPUT_W(SLV_ID_VALID_W),
         .OUTPUT_W(SLV_AMT)
@@ -68,5 +67,42 @@ module dsp_WDATA_channel
         .i(slv_id_valid),
         .o(slv_sel)
     );
-
+    // -- Master skid buffer
+    skid_buffer #(
+        .SBUF_TYPE(0),
+        .DATA_WIDTH(W_INFO_W)
+    ) mst_skid_buffer (
+        .clk        (ACLK_i),
+        .rst_n      (ARESETn_i),
+        .bwd_data_i (msb_bwd_data),
+        .bwd_valid_i(msb_bwd_valid),
+        .fwd_ready_i(msb_fwd_ready),
+        .fwd_data_o (msb_fwd_data),
+        .bwd_ready_o(msb_bwd_ready),
+        .fwd_valid_o(msb_fwd_valid)
+    );
+    
+    // Combinational logic
+    // -- Slave ID decoder
+    assign slv_id_valid = {dsp_AW_disable_i, dsp_AW_slv_id_i};
+    // -- Output
+    // -- -- Output to Master
+    assign m_WREADY_o = msb_bwd_ready;
+    // -- -- Output to Slave arbitration
+    generate
+        for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin
+            assign sa_WDATA_o[DATA_WIDTH*(slv_idx+1)-1-:DATA_WIDTH] = msb_fwd_WDATA;
+            assign sa_WLAST_o[slv_idx] = msb_fwd_WLAST;
+            assign sa_WVALID_o[slv_idx] = msb_fwd_valid;
+            assign sa_WDATA_sel_o[slv_idx] = slv_sel[slv_idx];
+        end
+    endgenerate
+    // -- To DSP AW channel 
+    assign dsp_AW_WVALID_o  = msb_fwd_valid;
+    assign dsp_AW_WREADY_o  = msb_fwd_ready;
+    // -- Master skid buffer 
+    assign msb_bwd_data     = {m_WDATA_i, m_WLAST_i};
+    assign msb_bwd_valid    = m_WVALID_i;
+    assign msb_fwd_ready    = (~dsp_AW_disable_i) & sa_WREADY_i[dsp_AW_slv_id_i];
+    assign {msb_fwd_WDATA, msb_fwd_WLAST} = msb_fwd_data;
 endmodule

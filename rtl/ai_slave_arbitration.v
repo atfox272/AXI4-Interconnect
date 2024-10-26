@@ -150,7 +150,7 @@ module ai_slave_arbitration
         .SLV_ID(SLV_ID),
         .SLV_ID_MSB_IDX(SLV_ID_MSB_IDX),
         .SLV_ID_LSB_IDX(SLV_ID_LSB_IDX)
-    ) WADDR_channel (
+    ) AW_channel (
         // Input
         .ACLK_i(ACLK_i),
         .ARESETn_i(ARESETn_i),
@@ -185,7 +185,7 @@ module ai_slave_arbitration
         .DATA_WIDTH(DATA_WIDTH),
         .ADDR_WIDTH(ADDR_WIDTH),
         .TRANS_DATA_LEN_W(TRANS_DATA_LEN_W)
-    ) WDATA_channel (
+    ) W_channel (
         // Input
         .ACLK_i(ACLK_i),
         .ARESETn_i(ARESETn_i),
@@ -212,7 +212,7 @@ module ai_slave_arbitration
         .TRANS_MST_ID_W(TRANS_MST_ID_W),
         .TRANS_SLV_ID_W(TRANS_SLV_ID_W),
         .TRANS_WR_RESP_W(TRANS_WR_RESP_W)
-    ) WRESP_channel (
+    ) B_channel (
         // Input
         .ACLK_i(ACLK_i),
         .ARESETn_i(ARESETn_i),
@@ -247,7 +247,7 @@ module ai_slave_arbitration
         .SLV_ID(SLV_ID),
         .SLV_ID_MSB_IDX(SLV_ID_MSB_IDX),
         .SLV_ID_LSB_IDX(SLV_ID_LSB_IDX)
-    ) RADDR_channel (
+    ) AR_channel (
         // Input
         .ACLK_i(ACLK_i),
         .ARESETn_i(ARESETn_i),
@@ -283,7 +283,7 @@ module ai_slave_arbitration
         .ADDR_WIDTH(ADDR_WIDTH),
         .TRANS_MST_ID_W(TRANS_MST_ID_W),
         .TRANS_SLV_ID_W(TRANS_SLV_ID_W)
-    ) RDATA_channel (
+    ) R_channel (
         .ACLK_i(ACLK_i),
         .ARESETn_i(ARESETn_i),
         .dsp_RREADY_i(dsp_RREADY_i),

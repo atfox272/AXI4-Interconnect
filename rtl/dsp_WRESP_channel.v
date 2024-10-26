@@ -71,6 +71,15 @@ module dsp_WRESP_channel
     // -- Misc
     wire    [TRANS_MST_ID_W-1:0]    sa_BID_valid        [SLV_AMT-1:0];
     wire    [TRANS_WR_RESP_W-1:0]   sa_BRESP_valid      [SLV_AMT-1:0];
+    // -- Master skid buffer 
+    wire    [RESP_INFO_W-1:0]       msb_bwd_data;
+    wire                            msb_bwd_valid;
+    wire                            msb_bwd_ready;
+    wire    [RESP_INFO_W-1:0]       msb_fwd_data;
+    wire                            msb_fwd_valid;
+    wire                            msb_fwd_ready;
+    wire    [TRANS_MST_ID_W-1:0]    msb_fwd_BID;
+    wire    [TRANS_WR_RESP_W-1:0]   msb_fwd_BRESP;
     // Module
     // -- Slave order FIFO
     fifo #(
@@ -110,6 +119,20 @@ module dsp_WRESP_channel
             );
         end
     endgenerate
+    // -- Master skid buffer
+    skid_buffer #(
+        .SBUF_TYPE(0),
+        .DATA_WIDTH(RESP_INFO_W)
+    ) mst_skid_buffer (
+        .clk        (ACLK_i),
+        .rst_n      (ARESETn_i),
+        .bwd_data_i (msb_bwd_data),
+        .bwd_valid_i(msb_bwd_valid),
+        .fwd_ready_i(msb_fwd_ready),
+        .fwd_data_o (msb_fwd_data),
+        .bwd_ready_o(msb_bwd_ready),
+        .fwd_valid_o(msb_fwd_valid)
+    );
     
     // Combinational logic
     // -- Slave order FIFO
@@ -126,20 +149,25 @@ module dsp_WRESP_channel
         end
     endgenerate
     // -- Handshake detector
-    assign m_handshake_occur = m_BVALID_o & m_BREADY_i;
+    assign m_handshake_occur = msb_bwd_valid & msb_bwd_ready;
     generate
         for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin
             assign sa_handshake_occur[slv_idx] = sa_BVALID_i[slv_idx] & sa_BREADY_o[slv_idx];
         end
     endgenerate
     // -- Output to Master
-    assign m_BID_o = sa_BID_valid[slv_info_valid];
-    assign m_BRESP_o = sa_BRESP_valid[slv_info_valid];
-    assign m_BVALID_o = ~(fifo_slv_ord_empty | fifo_wresp_empty[slv_info_valid]);
+    assign m_BID_o = msb_fwd_BID;
+    assign m_BRESP_o = msb_fwd_BRESP;
+    assign m_BVALID_o = msb_fwd_valid;
     // -- Output to Slave arbitration
     generate
         for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin
             assign sa_BREADY_o[slv_idx] = ~fifo_wresp_full[slv_idx];
         end
     endgenerate
+    // -- Master skid buffer
+    assign msb_bwd_data     = {sa_BID_valid[slv_info_valid], sa_BRESP_valid[slv_info_valid]};
+    assign msb_bwd_valid    = ~(fifo_slv_ord_empty | fifo_wresp_empty[slv_info_valid]);
+    assign msb_fwd_ready    = m_BREADY_i;
+    assign {msb_fwd_BID, msb_fwd_BRESP} = msb_fwd_data;
 endmodule

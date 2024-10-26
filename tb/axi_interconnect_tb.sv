@@ -24,7 +24,7 @@ parameter                       AWREADY_STALL_MAX       = 2;
 parameter                       WREADY_STALL_MAX        = 2;
 parameter                       BREADY_STALL_MAX        = 2;
 // -- End time
-parameter                       END_TIME                = (1 + 6 + 2 + WREADY_STALL_MAX/2 + 2)*2*`NUM_TRANS*4;
+parameter                       END_TIME                = (1 + 6 + 6 + WREADY_STALL_MAX/2 + 2)*2*`NUM_TRANS*4;
 
 // Interconnect configuration
 parameter                       MST_AMT                 = 4;

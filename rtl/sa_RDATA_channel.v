@@ -47,7 +47,8 @@ module sa_RDATA_channel
 );
 
     // Local parameters initialization
-    localparam FILTER_INFO_W = TRANS_SLV_ID_W + 1; // crossing flag + transaction ID
+    localparam FILTER_INFO_W    = TRANS_SLV_ID_W + 1; // crossing flag + transaction ID
+    localparam R_INFO_W         = TRANS_SLV_ID_W + DATA_WIDTH + TRANS_WR_RESP_W + 1;
     
     // Internal variable declaration 
     genvar mst_idx;
@@ -71,6 +72,17 @@ module sa_RDATA_channel
     // -- Master mapping
     wire    [MST_ID_W-1:0]          mst_id;
     wire                            dsp_RREADY_valid;
+    // -- Slave skid buffer
+    wire    [R_INFO_W-1:0]          ssb_bwd_data;
+    wire                            ssb_bwd_valid;
+    wire                            ssb_bwd_ready;
+    wire    [R_INFO_W-1:0]          ssb_fwd_data;
+    wire                            ssb_fwd_valid;
+    wire                            ssb_fwd_ready;
+    wire    [TRANS_SLV_ID_W-1:0]    ssb_fwd_RID;
+    wire    [DATA_WIDTH-1:0]        ssb_fwd_RDATA;
+    wire    [TRANS_WR_RESP_W-1:0]   ssb_fwd_RRESP;
+    wire                            ssb_fwd_RLAST;
     
     // Module
     // -- FIFO WRESP ordering
@@ -91,33 +103,51 @@ module sa_RDATA_channel
         .counter(),
         .rst_n(ARESETn_i)
     );
-    
+    // Slave skid buffer (pipelined in/out)
+    skid_buffer #(
+        .SBUF_TYPE(0),
+        .DATA_WIDTH(R_INFO_W)
+    ) slv_skid_buffer (
+        .clk        (ACLK_i),
+        .rst_n      (ARESETn_i),
+        .bwd_data_i (ssb_bwd_data),
+        .bwd_valid_i(ssb_bwd_valid),
+        .fwd_ready_i(ssb_fwd_ready),
+        .fwd_data_o (ssb_fwd_data),
+        .bwd_ready_o(ssb_bwd_ready),
+        .fwd_valid_o(ssb_fwd_valid)
+    );
     // Combinational logic
     // -- FIFO WRESP filter
     assign filter_info = {AR_crossing_flag_i, AR_AxID_i};
     assign fifo_filter_wr_en = AR_shift_en_i;
-    assign fifo_filter_rd_en = slv_handshake_occur & s_RLAST_i;
+    assign fifo_filter_rd_en = slv_handshake_occur & ssb_fwd_RLAST;
     // -- Write response filter
     assign {crossing_flag_valid, ARID_valid} = filter_info_valid;
-    assign filter_ARID_match = ARID_valid == s_RID_i;
+    assign filter_ARID_match = ARID_valid == ssb_fwd_RID;
     assign filter_condition = filter_ARID_match & (~fifo_filter_empty) & crossing_flag_valid;
-    assign filter_RLAST = s_RLAST_i & ~filter_condition;
+    assign filter_RLAST = ssb_fwd_RLAST & ~filter_condition;
     // -- Handshake detector
-    assign slv_handshake_occur = s_RVALID_i & s_RREADY_o;
+    assign slv_handshake_occur = ssb_fwd_valid & ssb_fwd_ready;
     // -- Master mapping
-    assign mst_id = s_RID_i[(TRANS_SLV_ID_W-1)-:MST_ID_W];
+    assign mst_id = ssb_fwd_RID[(TRANS_SLV_ID_W-1)-:MST_ID_W];
     // -- Slave Output
-    assign s_RREADY_o = dsp_RREADY_i[mst_id];
+    assign s_RREADY_o = ssb_bwd_ready;
     // -- Dispatcher Output
     generate
         for(mst_idx = 0; mst_idx < MST_AMT; mst_idx = mst_idx + 1) begin
-            assign dsp_RVALID_o[mst_idx] = (mst_id == mst_idx) & s_RVALID_i;
-            assign dsp_RID_o[TRANS_MST_ID_W*(mst_idx+1)-1-:TRANS_MST_ID_W] = s_RID_i[TRANS_MST_ID_W-1:0];
-            assign dsp_RDATA_o[DATA_WIDTH*(mst_idx+1)-1-:DATA_WIDTH] = s_RDATA_i;
-            assign dsp_RRESP_o[TRANS_WR_RESP_W*(mst_idx+1)-1-:TRANS_WR_RESP_W] = s_RRESP_i;
+            assign dsp_RVALID_o[mst_idx] = (mst_id == mst_idx) & ssb_fwd_valid;
+            assign dsp_RID_o[TRANS_MST_ID_W*(mst_idx+1)-1-:TRANS_MST_ID_W] = ssb_fwd_RID[TRANS_MST_ID_W-1:0];
+            assign dsp_RDATA_o[DATA_WIDTH*(mst_idx+1)-1-:DATA_WIDTH] = ssb_fwd_RDATA;
+            assign dsp_RRESP_o[TRANS_WR_RESP_W*(mst_idx+1)-1-:TRANS_WR_RESP_W] = ssb_fwd_RRESP;
             assign dsp_RLAST_o[mst_idx] = filter_RLAST;
         end
     endgenerate
+    // -- Slave skid buffer
+    assign ssb_bwd_data     = {s_RID_i, s_RDATA_i, s_RRESP_i, s_RLAST_i};
+    assign ssb_bwd_valid    = s_RVALID_i;
+    assign ssb_fwd_ready    = dsp_RREADY_i[mst_id];
+    assign {ssb_fwd_RID, ssb_fwd_RDATA, ssb_fwd_RRESP, ssb_fwd_RLAST} = ssb_fwd_data;
     // -- Write Address channel Output
     assign AR_stall_o = fifo_filter_full;
 

@@ -86,7 +86,10 @@ module dsp_write_channel
     // -- To AW channel Slave arbitration
     wire [OUTST_CTN_W-1:0]  AW_outst_ctn;
     wire [OUTST_CTN_W-1:0]  B_outst_ctn;
-    
+    // -- Interconnect
+    wire                    W_AW_WVALID;
+    wire                    W_AW_WREADY;
+        
     // Combinational logic
     generate
     for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin
@@ -107,7 +110,7 @@ module dsp_write_channel
         .SLV_ID_W(SLV_ID_W),
         .SLV_ID_MSB_IDX(SLV_ID_MSB_IDX),
         .SLV_ID_LSB_IDX(SLV_ID_LSB_IDX)
-    ) WADDR_channel (
+    ) AW_channel (
         .ACLK_i(ACLK_i),
         .ARESETn_i(ARESETn_i),
         .m_AxID_i(m_AWID_i),
@@ -116,8 +119,8 @@ module dsp_write_channel
         .m_AxLEN_i(m_AWLEN_i),
         .m_AxSIZE_i(m_AWSIZE_i),
         .m_AxVALID_i(m_AWVALID_i),
-        .m_xVALID_i(m_WVALID_i),
-        .m_xREADY_i(m_WREADY_o),
+        .m_xVALID_i(W_AW_WVALID),
+        .m_xREADY_i(W_AW_WREADY),
         .sa_AxREADY_i(sa_AWREADY_i),
         .m_AxREADY_o(m_AWREADY_o),
         .sa_AxID_o(sa_AWID_o),
@@ -139,7 +142,9 @@ module dsp_write_channel
         .SLV_ID_W(SLV_ID_W),
         .SLV_ID_MSB_IDX(SLV_ID_MSB_IDX),
         .SLV_ID_LSB_IDX(SLV_ID_LSB_IDX)
-    ) WDATA_channel (
+    ) W_channel (
+        .ACLK_i(ACLK_i),
+        .ARESETn_i(ARESETn_i),
         .m_WDATA_i(m_WDATA_i),
         .m_WLAST_i(m_WLAST_i),
         .m_WVALID_i(m_WVALID_i),
@@ -150,7 +155,9 @@ module dsp_write_channel
         .sa_WDATA_o(sa_WDATA_o),
         .sa_WLAST_o(sa_WLAST_o),
         .sa_WVALID_o(sa_WVALID_o),
-        .sa_WDATA_sel_o(sa_WDATA_sel_o)
+        .sa_WDATA_sel_o(sa_WDATA_sel_o),
+        .dsp_AW_WVALID_o(W_AW_WVALID),
+        .dsp_AW_WREADY_o(W_AW_WREADY)
     );
     
     dsp_WRESP_channel #(
@@ -166,7 +173,7 @@ module dsp_write_channel
         .SLV_ID_W(SLV_ID_W),
         .SLV_ID_MSB_IDX(SLV_ID_MSB_IDX),
         .SLV_ID_LSB_IDX(SLV_ID_LSB_IDX)
-    ) WRESP_channel (
+    ) B_channel (
         .ACLK_i(ACLK_i),
         .ARESETn_i(ARESETn_i),
         .m_BREADY_i(m_BREADY_i),

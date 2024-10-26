@@ -57,6 +57,7 @@ module dsp_xADDR_channel
 );
     // Local parameters initialization
     localparam ADDR_INFO_W  = SLV_ID_W + TRANS_DATA_LEN_W;
+    localparam Ax_INFO_W    = TRANS_MST_ID_W + ADDR_WIDTH + TRANS_BURST_W + TRANS_DATA_LEN_W + TRANS_DATA_SIZE_W;
     
     // Internal variable declaration
     genvar slv_idx;
@@ -80,6 +81,18 @@ module dsp_xADDR_channel
     wire    [TRANS_DATA_LEN_W-1:0]  transfer_ctn_nxt;
     wire    [TRANS_DATA_LEN_W-1:0]  transfer_ctn_incr;
     wire                            transfer_ctn_match;
+    // -- Master skid buffer
+    wire    [Ax_INFO_W-1:0]         msb_bwd_data;
+    wire                            msb_bwd_valid;
+    wire                            msb_bwd_ready;
+    wire    [Ax_INFO_W-1:0]         msb_fwd_data;
+    wire                            msb_fwd_valid;
+    wire                            msb_fwd_ready;
+    wire    [TRANS_MST_ID_W-1:0]    msb_fwd_AxID;
+    wire    [ADDR_WIDTH-1:0]        msb_fwd_AxADDR;
+    wire    [TRANS_BURST_W-1:0]     msb_fwd_AxBURST;
+    wire    [TRANS_DATA_LEN_W-1:0]  msb_fwd_AxLEN;
+    wire    [TRANS_DATA_SIZE_W-1:0] msb_fwd_AxSIZE;
     
     // Reg declaration
     reg     [TRANS_DATA_LEN_W-1:0]  transfer_ctn_r;
@@ -102,16 +115,30 @@ module dsp_xADDR_channel
         .counter(sa_Ax_outst_ctn_o),
         .rst_n(ARESETn_i)
     );
+    // -- Master skid buffer
+    skid_buffer #(
+        .SBUF_TYPE(0),
+        .DATA_WIDTH(Ax_INFO_W)
+    ) mst_skid_buffer (
+        .clk        (ACLK_i),
+        .rst_n      (ARESETn_i),
+        .bwd_data_i (msb_bwd_data),
+        .bwd_valid_i(msb_bwd_valid),
+        .fwd_ready_i(msb_fwd_ready),
+        .fwd_data_o (msb_fwd_data),
+        .bwd_ready_o(msb_bwd_ready),
+        .fwd_valid_o(msb_fwd_valid)
+    );
     
     // Combinational logic
     // -- xADDR order FIFO
-    assign addr_slv_mapping = m_AxADDR_i[SLV_ID_MSB_IDX:SLV_ID_LSB_IDX];
-    assign addr_info = {addr_slv_mapping, m_AxLEN_i};
+    assign addr_slv_mapping = msb_fwd_AxADDR[SLV_ID_MSB_IDX:SLV_ID_LSB_IDX];
+    assign addr_info = {addr_slv_mapping, msb_fwd_AxLEN};
     assign {slv_id, AxLEN_valid} = addr_info_valid;
     assign fifo_xa_order_wr_en = Ax_handshake_occcur;
     assign fifo_xa_order_rd_en = transfer_ctn_match & xDATA_handshake_occur;
     // -- Handshake detector
-    assign Ax_handshake_occcur = m_AxVALID_i & m_AxREADY_o;
+    assign Ax_handshake_occcur = msb_fwd_valid & msb_fwd_ready;
     assign xDATA_handshake_occur = m_xVALID_i & m_xREADY_i;
     // -- Transfer counter
     assign transfer_ctn_nxt = (transfer_ctn_match) ? {TRANS_DATA_LEN_W{1'b0}} : transfer_ctn_incr;
@@ -121,14 +148,19 @@ module dsp_xADDR_channel
     // -- -- Output to Slave Arbitration
     generate 
         for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin
-            assign sa_AxID_o[TRANS_MST_ID_W*(slv_idx+1)-1-:TRANS_MST_ID_W]          = m_AxID_i;
-            assign sa_AxADDR_o[ADDR_WIDTH*(slv_idx+1)-1-:ADDR_WIDTH]                = m_AxADDR_i;
-            assign sa_AxBURST_o[TRANS_BURST_W*(slv_idx+1)-1-:TRANS_BURST_W]         = m_AxBURST_i;
-            assign sa_AxLEN_o[TRANS_DATA_LEN_W*(slv_idx+1)-1-:TRANS_DATA_LEN_W]     = m_AxLEN_i;
-            assign sa_AxSIZE_o[TRANS_DATA_SIZE_W*(slv_idx+1)-1-:TRANS_DATA_SIZE_W]  = m_AxSIZE_i;
-            assign sa_AxVALID_o[slv_idx]                                            = m_AxVALID_i;
+            assign sa_AxID_o[TRANS_MST_ID_W*(slv_idx+1)-1-:TRANS_MST_ID_W]          = msb_fwd_AxID;
+            assign sa_AxADDR_o[ADDR_WIDTH*(slv_idx+1)-1-:ADDR_WIDTH]                = msb_fwd_AxADDR;
+            assign sa_AxBURST_o[TRANS_BURST_W*(slv_idx+1)-1-:TRANS_BURST_W]         = msb_fwd_AxBURST;
+            assign sa_AxLEN_o[TRANS_DATA_LEN_W*(slv_idx+1)-1-:TRANS_DATA_LEN_W]     = msb_fwd_AxLEN;
+            assign sa_AxSIZE_o[TRANS_DATA_SIZE_W*(slv_idx+1)-1-:TRANS_DATA_SIZE_W]  = msb_fwd_AxSIZE;
+            assign sa_AxVALID_o[slv_idx]                                            = msb_fwd_valid;
         end
     endgenerate
+    // -- -- Master skid buffer
+    assign msb_bwd_data     = {m_AxID_i, m_AxADDR_i, m_AxBURST_i, m_AxLEN_i, m_AxSIZE_i};
+    assign msb_bwd_valid    = m_AxVALID_i;
+    assign msb_fwd_ready    = sa_AxREADY_i[addr_slv_mapping];
+    assign {msb_fwd_AxID, msb_fwd_AxADDR, msb_fwd_AxBURST, msb_fwd_AxLEN, msb_fwd_AxSIZE} = msb_fwd_data;
     // -- -- Output to xDATA dispatcher
     assign dsp_xDATA_slv_id_o = slv_id;
     assign dsp_xDATA_disable_o = fifo_xa_order_empty;
@@ -136,7 +168,7 @@ module dsp_xADDR_channel
     assign dsp_WRESP_slv_id_o = slv_id;
     assign dsp_WRESP_shift_en_o = fifo_xa_order_rd_en;
     // -- -- Output to Slave Arbitration
-    assign m_AxREADY_o = sa_AxREADY_i[addr_slv_mapping];
+    assign m_AxREADY_o = msb_bwd_ready;
     
     // Flip-flop
     always @(posedge ACLK_i) begin

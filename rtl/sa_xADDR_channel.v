@@ -54,6 +54,7 @@ module sa_xADDR_channel
 );
     // Local parameters initialization
     localparam ADDR_INFO_W  = TRANS_MST_ID_W + ADDR_WIDTH + TRANS_BURST_W + TRANS_DATA_LEN_W + TRANS_DATA_SIZE_W;
+    localparam AX_INFO_W    = TRANS_SLV_ID_W + ADDR_WIDTH + TRANS_BURST_W + TRANS_DATA_LEN_W + TRANS_DATA_SIZE_W;
     
     // Internal variable declaration
     genvar mst_idx;
@@ -102,6 +103,18 @@ module sa_xADDR_channel
     // 
     wire                            xADDR_channel_shift_en;
     wire                            x_channel_shift_en;
+    // -- Slave skid buffer
+    wire    [AX_INFO_W-1:0]         ssb_bwd_data;
+    wire                            ssb_bwd_valid;
+    wire                            ssb_bwd_ready;
+    wire    [AX_INFO_W-1:0]         ssb_fwd_data;
+    wire                            ssb_fwd_valid;
+    wire                            ssb_fwd_ready;
+    wire    [TRANS_SLV_ID_W-1:0]    ssb_fwd_AxID;
+    wire    [ADDR_WIDTH-1:0]        ssb_fwd_AxADDR;
+    wire    [TRANS_BURST_W-1:0]     ssb_fwd_AxBURST;
+    wire    [TRANS_DATA_LEN_W-1:0]  ssb_fwd_AxLEN;
+    wire    [TRANS_DATA_SIZE_W-1:0] ssb_fwd_AxSIZE;
     
     // reg declaration
     reg     [TRANS_SLV_ID_W-1:0]    AxID_o_r;
@@ -117,7 +130,8 @@ module sa_xADDR_channel
     generate
         for(mst_idx = 0; mst_idx < MST_AMT; mst_idx = mst_idx + 1) begin
             // ADDR info FIFO
-            fifo #(
+            sync_fifo #(
+                .FIFO_TYPE(2),              // Full flop
                 .DATA_WIDTH(ADDR_INFO_W),
                 .FIFO_DEPTH(OUTSTANDING_AMT)
             ) fifo_Ax_channel (
@@ -128,6 +142,8 @@ module sa_xADDR_channel
                 .wr_valid_i(fifo_addr_info_wr_en[mst_idx]),
                 .empty_o(fifo_addr_info_empt[mst_idx]),
                 .full_o(fifo_addr_info_full[mst_idx]),
+                .wr_ready_o(),
+                .rd_ready_o(),
                 .almost_empty_o(),
                 .almost_full_o(),
                 .counter(),
@@ -167,6 +183,21 @@ module sa_xADDR_channel
     ) master_id_encoder (
         .i(arb_grant_valid),
         .o(granted_mst_id)
+    );
+    
+    // Slave skid buffer (pipelined in/out)
+    skid_buffer #(
+        .SBUF_TYPE(0),
+        .DATA_WIDTH(AX_INFO_W)
+    ) slv_skid_buffer (
+        .clk        (ACLK_i),
+        .rst_n      (ARESETn_i),
+        .bwd_data_i (ssb_bwd_data),
+        .bwd_valid_i(ssb_bwd_valid),
+        .fwd_ready_i(ssb_fwd_ready),
+        .fwd_data_o (ssb_fwd_data),
+        .bwd_ready_o(ssb_bwd_ready),
+        .fwd_valid_o(ssb_fwd_valid)
     );
 //    edgedet 
 //    #(
@@ -210,28 +241,33 @@ module sa_xADDR_channel
     assign arb_req_remain = |arb_req;
     assign arb_grant_ready = xADDR_channel_shift_en;
     assign arb_num_grant_req = AxLEN_o_nxt + 1'b1;
-    assign slv_handshake_occur = s_AxVALID_o & s_AxREADY_i;
+    assign slv_handshake_occur = ssb_bwd_valid & ssb_bwd_ready;
     assign xADDR_channel_shift_en = slv_handshake_occur | tbr_trans_boot;
     assign x_channel_shift_en = xADDR_channel_shift_en & ~xDATA_stall_i;
     
-    assign s_AxID_o = AxID_o_r;
-    assign s_AxADDR_o = AxADDR_o_r;
-    assign s_AxBURST_o = AxBURST_o_r;
-    assign s_AxLEN_o = AxLEN_o_r;
-    assign s_AxSIZE_o = AxSIZE_o_r;
-    assign s_AxVALID_o = AxVALID_o_r;
+    assign s_AxID_o = ssb_fwd_AxID;
+    assign s_AxADDR_o = ssb_fwd_AxADDR;
+    assign s_AxBURST_o = ssb_fwd_AxBURST;
+    assign s_AxLEN_o = ssb_fwd_AxLEN;
+    assign s_AxSIZE_o = ssb_fwd_AxSIZE;
+    assign s_AxVALID_o = ssb_fwd_valid;
     assign AxID_o_nxt = {granted_mst_id, AxID_valid[granted_mst_id]};
     assign AxADDR_o_nxt = AxADDR_valid_split[granted_mst_id];
     assign AxBURST_o_nxt = AxBURST_valid[granted_mst_id];
     assign AxLEN_o_nxt = AxLEN_valid_split[granted_mst_id];
     assign AxSIZE_o_nxt = AxSIZE_valid[granted_mst_id];
     assign AxVALID_o_nxt = arb_req_remain & ~xDATA_stall_i;
-    
+    // -- 
     assign xDATA_AxID_o = AxID_o_nxt;
     assign xDATA_mst_id_o = AxID_o_nxt[TRANS_SLV_ID_W-1-:MST_ID_W];
     assign xDATA_crossing_flag_o = msk_addr_crossing_valid[granted_mst_id];
     assign xDATA_AxLEN_o = AxLEN_o_nxt;
     assign xDATA_fifo_order_wr_en_o = AxVALID_o_nxt & x_channel_shift_en;
+    // -- Slave skid buffer 
+    assign ssb_bwd_data     = {AxID_o_r, AxADDR_o_r, AxBURST_o_r, AxLEN_o_r, AxSIZE_o_r};
+    assign ssb_bwd_valid    = AxVALID_o_r;
+    assign ssb_fwd_ready    = s_AxREADY_i;
+    assign {ssb_fwd_AxID, ssb_fwd_AxADDR, ssb_fwd_AxBURST, ssb_fwd_AxLEN, ssb_fwd_AxSIZE} = ssb_fwd_data;
     // Flip-flop logic
     generate
     // -- ADDR mask controller

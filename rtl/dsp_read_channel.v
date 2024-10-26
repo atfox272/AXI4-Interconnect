@@ -74,6 +74,9 @@ module dsp_read_channel
     // -- AW channel to W channel 
     wire [SLV_ID_W-1:0]     AR_R_slv_id;
     wire                    AR_R_disable;
+    // -- W channel to AW channel
+    wire                    R_AR_RVALID_q1;
+    wire                    R_AR_RREADY_q1;
     // -- AW channel Slave arbitration
     wire [OUTST_CTN_W-1:0]  Ax_outst_ctn;
     
@@ -96,7 +99,7 @@ module dsp_read_channel
         .SLV_ID_W(SLV_ID_W),
         .SLV_ID_MSB_IDX(SLV_ID_MSB_IDX),
         .SLV_ID_LSB_IDX(SLV_ID_LSB_IDX)
-    ) RADDR_channel (
+    ) AR_channel (
         .ACLK_i(ACLK_i),
         .ARESETn_i(ARESETn_i),
         .m_AxID_i(m_ARID_i),
@@ -105,8 +108,8 @@ module dsp_read_channel
         .m_AxLEN_i(m_ARLEN_i),
         .m_AxSIZE_i(m_ARSIZE_i),
         .m_AxVALID_i(m_ARVALID_i),
-        .m_xVALID_i(m_RVALID_o),
-        .m_xREADY_i(m_RREADY_i),
+        .m_xVALID_i(R_AR_RVALID_q1),
+        .m_xREADY_i(R_AR_RREADY_q1),
         .sa_AxREADY_i(sa_ARREADY_i),
         .m_AxREADY_o(m_ARREADY_o),
         .sa_AxID_o(sa_ARID_o),
@@ -129,7 +132,7 @@ module dsp_read_channel
         .TRANS_WR_RESP_W(TRANS_WR_RESP_W),
         .SLV_ID_W(SLV_ID_W),
         .DSP_RDATA_DEPTH(DSP_RDATA_DEPTH)
-    ) RDATA_channel (
+    ) R_channel (
         .ACLK_i(ACLK_i),
         .ARESETn_i(ARESETn_i),
         .m_RREADY_i(m_RREADY_i),
@@ -145,7 +148,9 @@ module dsp_read_channel
         .m_RRESP_o(m_RRESP_o),
         .m_RLAST_o(m_RLAST_o),
         .m_RVALID_o(m_RVALID_o),
-        .sa_RREADY_o(sa_RREADY_o)
+        .sa_RREADY_o(sa_RREADY_o),
+        .dsp_RVALID_q1_o(R_AR_RVALID_q1),
+        .dsp_RREADY_q1_o(R_AR_RREADY_q1)
     );
 
 endmodule

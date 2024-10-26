@@ -42,10 +42,10 @@ module sa_WDATA_channel
     output                                  AW_stall_o      // stall shift_en of xADDR channel
 );
     // Local parameters declaration
-    localparam WLAST_W = 1;
-    localparam DATA_INFO_W = DATA_WIDTH; 
-    localparam ADDR_INFO_W = MST_ID_W + TRANS_DATA_LEN_W;
-    
+    localparam WLAST_W      = 1;
+    localparam DATA_INFO_W  = DATA_WIDTH; 
+    localparam ADDR_INFO_W  = MST_ID_W + TRANS_DATA_LEN_W;
+    localparam W_INFO_W     = DATA_WIDTH + 1;
     // Internal variable declaration
     genvar mst_idx;
     
@@ -89,6 +89,15 @@ module sa_WDATA_channel
     wire                            shift_en_trans_ctn;
     // -- Output control 
     wire                            WDATA_channel_shift_en;
+    // -- Slave skid buffer
+    wire    [W_INFO_W-1:0]          ssb_bwd_data;
+    wire                            ssb_bwd_valid;
+    wire                            ssb_bwd_ready;
+    wire    [W_INFO_W-1:0]          ssb_fwd_data;
+    wire                            ssb_fwd_valid;
+    wire                            ssb_fwd_ready;
+    wire    [DATA_WIDTH-1:0]        ssb_fwd_WDATA;
+    wire                            ssb_fwd_WLAST;
     
     // Reg declaration
     // -- Output control
@@ -113,6 +122,20 @@ module sa_WDATA_channel
         .almost_full_o(),
         .counter(),
         .rst_n(ARESETn_i)
+    );
+    // Slave skid buffer (pipelined in/out)
+    skid_buffer #(
+        .SBUF_TYPE(0),
+        .DATA_WIDTH(W_INFO_W)
+    ) slv_skid_buffer (
+        .clk        (ACLK_i),
+        .rst_n      (ARESETn_i),
+        .bwd_data_i (ssb_bwd_data),
+        .bwd_valid_i(ssb_bwd_valid),
+        .fwd_ready_i(ssb_fwd_ready),
+        .fwd_data_o (ssb_fwd_data),
+        .bwd_ready_o(ssb_bwd_ready),
+        .fwd_valid_o(ssb_fwd_valid)
     );
 //    onehot_encoder #(
 //        .INPUT_W(MST_AMT),
@@ -199,17 +222,21 @@ module sa_WDATA_channel
     assign transfer_ctn_incr        = transfer_ctn_r + 1'b1;
     assign transfer_ctn_nxt         = (Ax_AxLEN_valid == transfer_ctn_r) ? {TRANS_DATA_LEN_W{1'b0}} : transfer_ctn_incr;
     // Handshake detector
-    assign slv_handshake_occur      = s_WVALID_o_r & s_WREADY_i;
+    assign slv_handshake_occur      = ssb_bwd_valid & ssb_bwd_ready;
     // Output control 
     assign WDATA_channel_shift_en   = transaction_boot | (transaction_stop & slv_handshake_occur) | slv_handshake_occur;
     assign AW_stall_o               = fifo_order_full;
     assign s_WVALID_o_nxt           = transaction_en;
     assign s_WLAST_o_nxt            = (Ax_AxLEN_valid == transfer_ctn_r) & transaction_en;
     assign s_WDATA_o_nxt            = dsp_WDATA_valid[Ax_mst_id_valid];
-    assign s_WVALID_o               = s_WVALID_o_r;
-    assign s_WLAST_o                = s_WLAST_o_r;
-    assign s_WDATA_o                = s_WDATA_o_r;
-    
+    assign s_WVALID_o               = ssb_fwd_valid;
+    assign s_WLAST_o                = ssb_fwd_WLAST;
+    assign s_WDATA_o                = ssb_fwd_WDATA;
+    // -- Slave skid buffer
+    assign ssb_bwd_data             = {s_WDATA_o_r, s_WLAST_o_r};
+    assign ssb_bwd_valid            = s_WVALID_o_r;
+    assign ssb_fwd_ready            = s_WREADY_i;
+    assign {ssb_fwd_WDATA, ssb_fwd_WLAST}   = ssb_fwd_data;
     
     // Flip-flop logic
     always @(posedge ACLK_i) begin
