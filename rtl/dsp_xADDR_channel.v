@@ -117,7 +117,7 @@ module dsp_xADDR_channel
     );
     // -- Master skid buffer
     skid_buffer #(
-        .SBUF_TYPE(0),
+        .SBUF_TYPE(1),
         .DATA_WIDTH(Ax_INFO_W)
     ) mst_skid_buffer (
         .clk        (ACLK_i),

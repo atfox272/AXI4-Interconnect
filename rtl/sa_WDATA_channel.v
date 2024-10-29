@@ -125,7 +125,7 @@ module sa_WDATA_channel
     );
     // Slave skid buffer (pipelined in/out)
     skid_buffer #(
-        .SBUF_TYPE(0),
+        .SBUF_TYPE(3),
         .DATA_WIDTH(W_INFO_W)
     ) slv_skid_buffer (
         .clk        (ACLK_i),
@@ -155,7 +155,7 @@ module sa_WDATA_channel
 //        .rst_n(ARESETn_i)
 //    );    
     ////////////////////////////////////////////////////////////////////////////
-    assign transaction_boot = (~s_WVALID_o) & s_WVALID_o_nxt;
+    assign transaction_boot = (~s_WVALID_o_r) & s_WVALID_o_nxt;
     ////////////////////////////////////////////////////////////////////////////
     
     edgedet #(
@@ -169,7 +169,7 @@ module sa_WDATA_channel
     );
     
     ////////////////////////////////////////////////////////////////////////////
-//    assign transaction_stop = s_WVALID_o & (~s_WVALID_o_nxt);
+//    assign transaction_stop = s_WVALID_o_r & (~s_WVALID_o_nxt);
     ////////////////////////////////////////////////////////////////////////////
     
     generate

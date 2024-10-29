@@ -187,7 +187,7 @@ module sa_xADDR_channel
     
     // Slave skid buffer (pipelined in/out)
     skid_buffer #(
-        .SBUF_TYPE(0),
+        .SBUF_TYPE(3),
         .DATA_WIDTH(AX_INFO_W)
     ) slv_skid_buffer (
         .clk        (ACLK_i),

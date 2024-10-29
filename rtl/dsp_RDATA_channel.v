@@ -103,7 +103,7 @@ module dsp_RDATA_channel
     endgenerate
     // -- Master skid buffer
     skid_buffer #(
-        .SBUF_TYPE(0),
+        .SBUF_TYPE(3),
         .DATA_WIDTH(DATA_INFO_W)
     ) mst_skid_buffer (
         .clk        (ACLK_i),

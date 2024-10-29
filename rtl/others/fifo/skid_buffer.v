@@ -91,7 +91,7 @@ generate
             end
         end
     end
-    else if(SBUF_TYPE == 1) begin   : REGISTERED_INPUT
+    else if(SBUF_TYPE == 1) begin   : OPT_BWD_TIMING    // Optimized backward timing
         
         // Internal signal
         // -- wire declaration
@@ -222,6 +222,123 @@ generate
                 buffer <= bwd_data_i;
             end
         end
+    end
+    else if(SBUF_TYPE == 3) begin   : OPT_FWD_TIMING    // Optimized forward timing
+        // Local parameter 
+        localparam ACTIVE_ST        = 1'd0;
+        localparam PASSIVE_ST       = 1'd1;
+        // Internal signal 
+        // -- wire
+        wire    [DATA_WIDTH-1:0]    fwd_data_d;         /* Can use */
+        wire                        fwd_data_en;        /* VIOLATED PATH -> Do not use */
+        wire                        fwd_data_ien;       /* Can use */
+        wire                        fwd_valid_d;        /* Can use */
+        wire                        fwd_valid_en;       /* VIOLATED PATH -> Do not use */
+        wire                        fwd_valid_ien;      /* Can use */
+        wire                        fwd_sel;            /* Can use */
+        wire    [DATA_WIDTH-1:0]    fifo_rd_data;       /* Can use */
+        wire                        fifo_rd_valid;      /* Can use */
+        wire                        fifo_rd_ready;      /* Can use */
+        reg                         sb_state_d;         /* Can use */
+        // -- reg
+        reg     [DATA_WIDTH-1:0]    fwd_data_q;         /* Can use */
+        reg     [DATA_WIDTH-1:0]    fwd_bckp_data_q;    /* Can use */
+        reg                         fwd_bckp_valid_q;   /* Can use */
+        reg                         fwd_valid_q;        /* Can use */
+        reg                         fwd_ready_q;        /* Can use */
+        reg                         sb_state_q;
+        
+        // Internal module
+        sb_fifo 
+        #(
+            .DATA_WIDTH(DATA_WIDTH),
+            .FIFO_DEPTH(2)
+        ) fifo (
+            .clk        (clk),
+            .data_i     (bwd_data_i),
+            .data_o     (fifo_rd_data),
+            .rd_valid_i (fifo_rd_valid),
+            .wr_valid_i (bwd_valid_i),
+            .wr_ready_o (bwd_ready_o),
+            .rd_ready_o (fifo_rd_ready),
+            .rst_n      (rst_n)
+        );
+        
+        // Combination logic
+        assign fwd_data_o       = fwd_data_q;
+        assign fwd_valid_o      = fwd_valid_q;
+        assign fwd_sel          = (sb_state_q == PASSIVE_ST) & (~fwd_ready_q);
+        assign fwd_data_d       = (fwd_sel) ? fwd_bckp_data_q  : fifo_rd_data;
+        assign fwd_valid_d      = (~(!fwd_valid_q & (sb_state_q == PASSIVE_ST))) & ((fwd_sel) ? fwd_bckp_valid_q : fifo_rd_ready);
+        assign fwd_data_en      = fwd_data_ien | fwd_ready_i;
+        assign fwd_valid_en     = fwd_valid_ien | fwd_ready_i;
+        assign fwd_data_ien     = (sb_state_q == ACTIVE_ST) & fifo_rd_ready;
+        assign fwd_valid_ien    = fwd_data_ien;
+        assign fifo_rd_valid    = (sb_state_q == ACTIVE_ST) | ((sb_state_q == PASSIVE_ST) & fwd_ready_q & fwd_valid_q);
+        always @(*) begin
+            sb_state_d = sb_state_q;
+            case(sb_state_q)
+                ACTIVE_ST: begin
+                    if(fifo_rd_ready) begin
+                        sb_state_d = PASSIVE_ST;
+                    end
+                end
+                PASSIVE_ST: begin
+                    if(!fwd_valid_q) begin
+                        sb_state_d = ACTIVE_ST;
+                    end
+                end
+            endcase
+        end
+        // Flip-flop
+        // -- Forward Data          
+        always @(posedge clk) begin
+            if(fwd_data_en) begin
+                fwd_data_q <= fwd_data_d;
+            end
+        end
+        // -- Forward Valid
+        always @(posedge clk) begin
+            if(!rst_n) begin
+                fwd_valid_q <= 1'b0;
+            end
+            else if(fwd_valid_en) begin
+                fwd_valid_q <= fwd_valid_d;
+            end
+        end
+        // -- Forward Ready
+        always @(posedge clk) begin
+            fwd_ready_q <= fwd_ready_i;
+        end
+        // -- Backup Forward Data
+        always @(posedge clk) begin
+            if(fwd_ready_q) begin
+                fwd_bckp_data_q <= fifo_rd_data;
+            end 
+        end
+        // -- Backup Data Valid
+        always @(posedge clk) begin
+            if(!rst_n) begin
+                fwd_bckp_valid_q <= 1'b0;
+            end
+            else if(fwd_ready_q) begin
+                fwd_bckp_valid_q <= fifo_rd_ready & (~(!fwd_valid_q & (sb_state_q == PASSIVE_ST)));
+            end
+        end
+        // -- Skid buffer state
+        always @(posedge clk) begin
+            if(~rst_n) begin
+                sb_state_q <= 1'b0;
+            end
+            else begin
+                sb_state_q <= sb_state_d;
+            end
+        end
+    end
+    else if(SBUF_TYPE == 4) begin   : BYPASS
+        assign fwd_data_o   = bwd_data_i;
+        assign fwd_valid_o  = bwd_valid_i;
+        assign bwd_ready_o  = fwd_ready_i;
     end
 endgenerate
 endmodule

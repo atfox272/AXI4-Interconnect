@@ -95,7 +95,7 @@ module sa_WRESP_channel
     );
     // Slave skid buffer (pipelined in/out)
     skid_buffer #(
-        .SBUF_TYPE(0),
+        .SBUF_TYPE(1),
         .DATA_WIDTH(B_INFO_W)
     ) slv_skid_buffer (
         .clk        (ACLK_i),
