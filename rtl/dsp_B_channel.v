@@ -1,4 +1,4 @@
-module dsp_WRESP_channel
+module dsp_B_channel
 #(
     // Dispatcher configuration
     parameter SLV_AMT           = 2,

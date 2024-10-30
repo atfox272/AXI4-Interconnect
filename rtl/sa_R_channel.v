@@ -1,4 +1,4 @@
-module sa_RDATA_channel 
+module sa_R_channel 
 #(
     // Interconnect configuration
     parameter                       MST_AMT             = 3,

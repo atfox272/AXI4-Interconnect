@@ -87,7 +87,7 @@ module dsp_read_channel
     end
     endgenerate
     // Module
-    dsp_xADDR_channel #(
+    dsp_Ax_channel #(
         .SLV_AMT(SLV_AMT),
         .OUTSTANDING_AMT(OUTSTANDING_AMT),
         .DATA_WIDTH(DATA_WIDTH),
@@ -125,7 +125,7 @@ module dsp_read_channel
         .dsp_WRESP_shift_en_o() // N/C
     );
 
-    dsp_RDATA_channel #(
+    dsp_R_channel #(
         .SLV_AMT(SLV_AMT),
         .DATA_WIDTH(DATA_WIDTH),
         .TRANS_MST_ID_W(TRANS_MST_ID_W),

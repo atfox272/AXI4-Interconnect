@@ -98,7 +98,7 @@ module dsp_write_channel
     endgenerate
     
     // Module
-    dsp_xADDR_channel #(
+    dsp_Ax_channel #(
         .SLV_AMT(SLV_AMT),
         .OUTSTANDING_AMT(OUTSTANDING_AMT),
         .DATA_WIDTH(DATA_WIDTH),
@@ -136,7 +136,7 @@ module dsp_write_channel
         .dsp_WRESP_shift_en_o(AW_B_shift_en)
     );
     
-    dsp_WDATA_channel #(
+    dsp_W_channel #(
         .SLV_AMT(SLV_AMT),
         .DATA_WIDTH(DATA_WIDTH),
         .SLV_ID_W(SLV_ID_W),
@@ -160,7 +160,7 @@ module dsp_write_channel
         .dsp_AW_WREADY_o(W_AW_WREADY)
     );
     
-    dsp_WRESP_channel #(
+    dsp_B_channel #(
         .SLV_AMT(SLV_AMT),
         .OUTSTANDING_AMT(OUTSTANDING_AMT),
         .DATA_WIDTH(DATA_WIDTH),

@@ -1,4 +1,4 @@
-module dsp_RDATA_channel
+module dsp_R_channel
 #(
     // Dispatcher configuration
     parameter SLV_AMT           = 2,

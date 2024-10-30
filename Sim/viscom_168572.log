@@ -1,0 +1,8 @@
+** Error: (vopt-3) System call 'VirtualAlloc()' failed.
+** Fatal: (vopt-4) ****** Memory allocation failure. *****
+Attempting to allocate 131072 bytes
+Please check your system for available memory and swap space.
+** Fatal: (vopt-4) ****** Memory allocation failure. *****
+Attempting to allocate 131072 bytes
+Please check your system for available memory and swap space.
+** Note: Vopt Compiler exiting with error code 232

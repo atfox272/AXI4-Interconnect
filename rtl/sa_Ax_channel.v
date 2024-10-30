@@ -1,4 +1,4 @@
-module sa_xADDR_channel 
+module sa_Ax_channel 
 #(
     // Interconnect configuration
     parameter                       MST_AMT             = 3,

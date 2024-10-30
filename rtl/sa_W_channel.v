@@ -1,4 +1,4 @@
-module sa_WDATA_channel
+module sa_W_channel
 #(
     // Interconnect configuration
     parameter                       MST_AMT             = 3,

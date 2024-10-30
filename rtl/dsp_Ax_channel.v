@@ -1,4 +1,4 @@
-module dsp_xADDR_channel
+module dsp_Ax_channel
 #(
     // Dispatcher configuration
     parameter SLV_AMT           = 2,

@@ -135,7 +135,7 @@ module ai_slave_arbitration
     // Module
     // -- Write channel
     // -- -- Write Address channel
-    sa_xADDR_channel #(
+    sa_Ax_channel #(
         .MST_AMT(MST_AMT),
         .OUTSTANDING_AMT(OUTSTANDING_AMT),
         .MST_WEIGHT(MST_WEIGHT),
@@ -178,7 +178,7 @@ module ai_slave_arbitration
         .xDATA_fifo_order_wr_en_o(AW_shift_en)
     );
     // -- -- Write Data channel
-    sa_WDATA_channel #(
+    sa_W_channel #(
         .MST_AMT(MST_AMT),
         .OUTSTANDING_AMT(OUTSTANDING_AMT),
         .MST_ID_W(MST_ID_W),
@@ -205,7 +205,7 @@ module ai_slave_arbitration
         .AW_stall_o(AW_stall_WDATA)
     );
     // -- -- Wire Response channel
-    sa_WRESP_channel #(
+    sa_B_channel #(
         .MST_AMT(MST_AMT),
         .OUTSTANDING_AMT(OUTSTANDING_AMT),
         .MST_ID_W(MST_ID_W),
@@ -232,7 +232,7 @@ module ai_slave_arbitration
     );
     // -- Read channel
     // -- -- Read Address channel
-    sa_xADDR_channel #(
+    sa_Ax_channel #(
         .MST_AMT(MST_AMT),
         .OUTSTANDING_AMT(OUTSTANDING_AMT),
         .MST_WEIGHT(MST_WEIGHT),
@@ -275,7 +275,7 @@ module ai_slave_arbitration
         .xDATA_fifo_order_wr_en_o(AR_shift_en)
     );
     // -- -- Read Data channel 
-    sa_RDATA_channel #(
+    sa_R_channel #(
         .MST_AMT(MST_AMT),
         .OUTSTANDING_AMT(OUTSTANDING_AMT),
         .MST_ID_W(MST_ID_W),

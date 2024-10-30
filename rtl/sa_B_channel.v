@@ -1,4 +1,4 @@
-module sa_WRESP_channel 
+module sa_B_channel 
 #(
     // Interconnect configuration
     parameter MST_AMT           = 3,
