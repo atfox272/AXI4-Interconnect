@@ -69,6 +69,7 @@ module dsp_Ax_channel
     wire                            fifo_xa_order_wr_en;
     wire                            fifo_xa_order_rd_en;
     wire                            fifo_xa_order_empty;
+    wire                            fifo_xa_order_full;
     // -- Handshake detector
     wire                            Ax_handshake_occcur;
     wire                            xDATA_handshake_occur;
@@ -109,7 +110,7 @@ module dsp_Ax_channel
         .rd_valid_i(fifo_xa_order_rd_en),
         .wr_valid_i(fifo_xa_order_wr_en),
         .empty_o(fifo_xa_order_empty),
-        .full_o(),
+        .full_o(fifo_xa_order_full),
         .almost_empty_o(),
         .almost_full_o(),
         .counter(sa_Ax_outst_ctn_o),
@@ -153,13 +154,13 @@ module dsp_Ax_channel
             assign sa_AxBURST_o[TRANS_BURST_W*(slv_idx+1)-1-:TRANS_BURST_W]         = msb_fwd_AxBURST;
             assign sa_AxLEN_o[TRANS_DATA_LEN_W*(slv_idx+1)-1-:TRANS_DATA_LEN_W]     = msb_fwd_AxLEN;
             assign sa_AxSIZE_o[TRANS_DATA_SIZE_W*(slv_idx+1)-1-:TRANS_DATA_SIZE_W]  = msb_fwd_AxSIZE;
-            assign sa_AxVALID_o[slv_idx]                                            = msb_fwd_valid;
+            assign sa_AxVALID_o[slv_idx]                                            = msb_fwd_valid & (addr_slv_mapping == slv_idx) & (~fifo_xa_order_full);
         end
     endgenerate
     // -- -- Master skid buffer
     assign msb_bwd_data     = {m_AxID_i, m_AxADDR_i, m_AxBURST_i, m_AxLEN_i, m_AxSIZE_i};
     assign msb_bwd_valid    = m_AxVALID_i;
-    assign msb_fwd_ready    = sa_AxREADY_i[addr_slv_mapping];
+    assign msb_fwd_ready    = sa_AxREADY_i[addr_slv_mapping] & (~fifo_xa_order_full);
     assign {msb_fwd_AxID, msb_fwd_AxADDR, msb_fwd_AxBURST, msb_fwd_AxLEN, msb_fwd_AxSIZE} = msb_fwd_data;
     // -- -- Output to xDATA dispatcher
     assign dsp_xDATA_slv_id_o = slv_id;

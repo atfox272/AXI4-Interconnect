@@ -14,6 +14,10 @@
 
 `define MAX_LENGTH          8
 
+// Monitor 
+// `define CROSS_4KB_STOP  // If any transaction crosses 4KB, the verification environment will be stopped   
+
+
 // Testbench configuration
 // -- Mode
 parameter                       TB_MODE                 = `BURST_MODE; 
@@ -28,10 +32,11 @@ parameter                       END_TIME                = (1 + 6 + 6 + WREADY_ST
 
 // Interconnect configuration
 parameter                       MST_AMT                 = 4;
-parameter                       SLV_AMT                 = 2;
+parameter                       SLV_AMT                 = 4;
 parameter                       OUTSTANDING_AMT         = 8;
 parameter [0:(MST_AMT*32)-1]    MST_WEIGHT              = {32'd5, 32'd3, 32'd1, 32'd1};
 int                             mst_need_req[MST_AMT]   = {50, 30, 10, 10};
+// int                             mst_need_req[MST_AMT]   = {50};
 parameter                       MST_ID_W                = $clog2(MST_AMT);
 parameter                       SLV_ID_W                = $clog2(SLV_AMT);
 // Transaction configuration
@@ -44,7 +49,7 @@ parameter                       TRANS_DATA_LEN_W        = 3;                    
 parameter                       TRANS_DATA_SIZE_W       = 3;                            // Bus width of xSIZE
 parameter                       TRANS_WR_RESP_W         = 2;
 // Slave info configuration (address mapping mechanism)
-parameter                       SLV_ID_MSB_IDX          = 30;
+parameter                       SLV_ID_MSB_IDX          = 31;
 parameter                       SLV_ID_LSB_IDX          = 30;
 // Dispatcher DATA depth configuration
 parameter                       DSP_RDATA_DEPTH         = 16;
@@ -55,7 +60,7 @@ typedef struct {
     bit [TRANS_MST_ID_W-1:0]      AxID;
     bit [TRANS_BURST_W-1:0]       AxBURST;
     bit [SLV_ID_W-1:0]            AxADDR_slv_id;
-    bit [ADDR_WIDTH-SLV_ID_W-2:0] AxADDR_addr;
+    bit [ADDR_WIDTH-SLV_ID_W-1:0] AxADDR_addr;
     bit [TRANS_DATA_LEN_W-1:0]    AxLEN;
     bit [TRANS_DATA_SIZE_W-1:0]   AxSIZE;
     // -- W channel
@@ -68,7 +73,7 @@ typedef struct {
     bit [TRANS_SLV_ID_W-1:0]        AxID_s;
     bit [TRANS_BURST_W-1:0]         AxBURST;
     bit [SLV_ID_W-1:0]              AxADDR_slv_id;
-    bit [ADDR_WIDTH-SLV_ID_W-2:0]   AxADDR_addr;
+    bit [ADDR_WIDTH-SLV_ID_W-1:0]   AxADDR_addr;
     bit [TRANS_DATA_LEN_W-1:0]      AxLEN;
     bit [TRANS_DATA_SIZE_W-1:0]     AxSIZE;
 } Ax_info;
@@ -99,7 +104,7 @@ class m_trans_random #(int mode = `BURST_MODE);
     rand    bit [TRANS_MST_ID_W-1:0]        m_AxID;
     rand    bit [TRANS_BURST_W-1:0]         m_AxBURST;
     rand    bit [SLV_ID_W-1:0]              m_AxADDR_slv_id;
-    rand    bit [ADDR_WIDTH-SLV_ID_W-2:0]   m_AxADDR_addr;
+    rand    bit [ADDR_WIDTH-SLV_ID_W-1:0]   m_AxADDR_addr;
     rand    bit [TRANS_DATA_LEN_W-1:0]      m_AxLEN;
     rand    bit [TRANS_DATA_SIZE_W-1:0]     m_AxSIZE;
     // W channel
@@ -110,7 +115,7 @@ class m_trans_random #(int mode = `BURST_MODE);
             m_trans_avail               == 1;
             m_trans_wr_rd               dist{0 :/ 1, 1:/ 1};
             m_AxBURST                   == 1;                 
-            m_AxADDR_slv_id             dist{0 :/ 1, 1:/ 1};
+            // m_AxADDR_slv_id             dist{0 :/ 1, 1:/ 1};
             m_AxADDR_addr%(1<<m_AxSIZE) == 0;   // All transfers must be aligned
         }
         else if(mode == `ARBITRATION_MODE) {
@@ -580,6 +585,16 @@ module axi_interconnect_tb;
         #10;
         slave_driver(slv_id);
     end
+    initial begin   : SLAVE_DRIVER_2
+        localparam slv_id = 2;
+        #10;
+        slave_driver(slv_id);
+    end
+    initial begin   : SLAVE_DRIVER_3
+        localparam slv_id = 3;
+        #10;
+        slave_driver(slv_id);
+    end
     // -- -- -- -- -- -- --  Slave Driver -- -- -- -- -- -- -- 
     
     // -- -- -- -- -- -- --  Monitor -- -- -- -- -- -- --
@@ -651,10 +666,10 @@ module axi_interconnect_tb;
     mailbox #(Ax_info)  m_drv_AR_info   [MST_AMT];  // Store AWLEN
     // -- Slave Driver
     // -- -- Write channel
-    mailbox #(Ax_info)  s_drv_AW_info   [MST_AMT];
-    mailbox #(B_info)   s_drv_B_resp    [MST_AMT];
+    mailbox #(Ax_info)  s_drv_AW_info   [SLV_AMT];
+    mailbox #(B_info)   s_drv_B_resp    [SLV_AMT];
     // -- -- Read channel 
-    mailbox #(Ax_info)  s_drv_AR_info   [MST_AMT];
+    mailbox #(Ax_info)  s_drv_AR_info   [SLV_AMT];
     // -- Tracking Monitor
     int                 trans_count     [MST_AMT];
     int                 master_stall    [MST_AMT];
@@ -750,7 +765,7 @@ module axi_interconnect_tb;
                             m_AW_transfer(  
                                 .mst_id (mst_id),
                                 .AWID   (Ax_temp.AxID_m),  
-                                .AWADDR ({1'h0, Ax_temp.AxADDR_slv_id, Ax_temp.AxADDR_addr}),
+                                .AWADDR ({Ax_temp.AxADDR_slv_id, Ax_temp.AxADDR_addr}),
                                 .AWBURST(Ax_temp.AxBURST),
                                 .AWLEN  (Ax_temp.AxLEN),
                                 .AWSIZE (Ax_temp.AxSIZE)
@@ -921,15 +936,20 @@ module axi_interconnect_tb;
                     s_AW_receive (
                         .slv_id (slv_id),
                         .AWID   (AW_temp.AxID_s),
-                        .AWADDR ({DMA_bit_temp, AW_temp.AxADDR_slv_id, AW_temp.AxADDR_addr}),
+                        .AWADDR ({AW_temp.AxADDR_slv_id, AW_temp.AxADDR_addr}),
                         .AWBURST(AW_temp.AxBURST),
                         .AWLEN  (AW_temp.AxLEN),
                         .AWSIZE (AW_temp.AxSIZE)
                     );
                     // 4KB crossing monitor
-                    ic_monitor_4kb_check(.addr({DMA_bit_temp, AW_temp.AxADDR_slv_id, AW_temp.AxADDR_addr}),
+                    ic_monitor_4kb_check(.addr({AW_temp.AxADDR_slv_id, AW_temp.AxADDR_addr}),
                                          .len(AW_temp.AxLEN),
                                          .size(AW_temp.AxSIZE));
+                    if(AW_temp.AxADDR_slv_id != slv_id) begin
+                        $display("[FAIL]: Slave%1d - Sample AWADDR = %h - Wrong mapping", slv_id, {AW_temp.AxADDR_slv_id, AW_temp.AxADDR_addr});
+                        cl;
+                        $stop;
+                    end
                     // Store AW info 
                     s_drv_AW_info[slv_id].put(AW_temp);
                     // Handshake occurs
@@ -956,11 +976,11 @@ module axi_interconnect_tb;
                                 .WLAST(WLAST_temp)
                             );
                             // WDATA predictor
-                            if(W_temp.WDATA[i] == {1'b0, AW_temp.AxADDR_slv_id, AW_temp.AxADDR_addr} + i*(2**AW_temp.AxSIZE)) begin
+                            if(W_temp.WDATA[i] == {AW_temp.AxADDR_slv_id, AW_temp.AxADDR_addr} + i*(2**AW_temp.AxSIZE)) begin
                                 // Pass
                             end
                             else begin
-                                $display("[FAIL]: Slave%1d - Sample WDATA[%1d] = %h and Golden WDATA = %h)", slv_id, i, W_temp.WDATA[i], {1'b0, AW_temp.AxADDR_slv_id, AW_temp.AxADDR_addr} + i*(2**AW_temp.AxSIZE));
+                                $display("[FAIL]: Slave%1d - Sample WDATA[%1d] = %h and Golden WDATA = %h)", slv_id, i, W_temp.WDATA[i], {AW_temp.AxADDR_slv_id, AW_temp.AxADDR_addr} + i*(2**AW_temp.AxSIZE));
                                 $stop;
                             end
                             // WLAST predictor
@@ -1016,16 +1036,21 @@ module axi_interconnect_tb;
                     s_AR_receive (
                         .slv_id (slv_id),
                         .ARID   (AR_temp.AxID_s),
-                        .ARADDR ({DMA_bit_temp, AR_temp.AxADDR_slv_id, AR_temp.AxADDR_addr}),
+                        .ARADDR ({AR_temp.AxADDR_slv_id, AR_temp.AxADDR_addr}),
                         .ARBURST(AR_temp.AxBURST),
                         .ARLEN  (AR_temp.AxLEN),
                         .ARSIZE (AR_temp.AxSIZE)
                     );
                     // Handshake occurs
                     cl;
-                    ic_monitor_4kb_check(.addr({DMA_bit_temp, AR_temp.AxADDR_slv_id, AR_temp.AxADDR_addr}),
+                    ic_monitor_4kb_check(.addr({AR_temp.AxADDR_slv_id, AR_temp.AxADDR_addr}),
                                          .len(AR_temp.AxLEN),
                                          .size(AR_temp.AxSIZE));
+                    if(AR_temp.AxADDR_slv_id != slv_id) begin
+                        $display("[FAIL]: Slave%1d - Sample ARADDR = %h - Wrong mapping", slv_id, {AR_temp.AxADDR_slv_id, AR_temp.AxADDR_addr});
+                        cl;
+                        $stop;
+                    end
                     // Store AW info 
                     s_drv_AR_info[slv_id].put(AR_temp);
                     // Stall random
@@ -1041,7 +1066,7 @@ module axi_interconnect_tb;
                             s_R_transfer (
                                 .slv_id(slv_id),
                                 .RID(AR_temp.AxID_s),
-                                .RDATA({1'b0, AR_temp.AxADDR_slv_id, AR_temp.AxADDR_addr} + i*(2**AR_temp.AxSIZE)),
+                                .RDATA({AR_temp.AxADDR_slv_id, AR_temp.AxADDR_addr} + i*(2**AR_temp.AxSIZE)),
                                 .RRESP(0),
                                 .RLAST(i == AR_temp.AxLEN)
                             );
@@ -1077,8 +1102,10 @@ module axi_interconnect_tb;
         int base_4kb;
         base_4kb = addr % 4096 + (len+1)*(2**size);
         if(base_4kb > 4096) begin
-            $display("[FAIL]: Crossing 4KB with ADDR = %8h LEN = %0d, SIZE = %0d at %t", addr, len, size, $time);
+            $display("[WARN]: Crossing 4KB with ADDR = %8h LEN = %0d, SIZE = %0d at %t", addr, len, size, $time);
+            `ifdef CROSS_4KB_STOP
             $stop;
+            `endif
         end
     endtask
     

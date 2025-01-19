@@ -33,7 +33,6 @@ module dsp_W_channel
     output  [DATA_WIDTH*SLV_AMT-1:0]        sa_WDATA_o,
     output  [SLV_AMT-1:0]                   sa_WLAST_o,
     output  [SLV_AMT-1:0]                   sa_WVALID_o,
-    output  [SLV_AMT-1:0]                   sa_WDATA_sel_o,    // Slave Arbitration selection
     // -- To DSP AW channel
     output                                  dsp_AW_WVALID_o,
     output                                  dsp_AW_WREADY_o
@@ -93,8 +92,7 @@ module dsp_W_channel
         for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin
             assign sa_WDATA_o[DATA_WIDTH*(slv_idx+1)-1-:DATA_WIDTH] = msb_fwd_WDATA;
             assign sa_WLAST_o[slv_idx] = msb_fwd_WLAST;
-            assign sa_WVALID_o[slv_idx] = msb_fwd_valid;
-            assign sa_WDATA_sel_o[slv_idx] = slv_sel[slv_idx];
+            assign sa_WVALID_o[slv_idx] = msb_fwd_valid & slv_sel[slv_idx];
         end
     endgenerate
     // -- To DSP AW channel 

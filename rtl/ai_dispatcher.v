@@ -94,7 +94,6 @@ module ai_dispatcher
     output  [DATA_WIDTH*SLV_AMT-1:0]        sa_WDATA_o,
     output  [SLV_AMT-1:0]                   sa_WLAST_o,
     output  [SLV_AMT-1:0]                   sa_WVALID_o,
-    output  [SLV_AMT-1:0]                   sa_WDATA_sel_o,   // Slave Arbitration selection
     // ---- Write response channel          
     output  [SLV_AMT-1:0]                   sa_BREADY_o,
     // ---- Read address channel            
@@ -154,7 +153,6 @@ module ai_dispatcher
         .sa_WDATA_o(sa_WDATA_o),
         .sa_WLAST_o(sa_WLAST_o),
         .sa_WVALID_o(sa_WVALID_o),
-        .sa_WDATA_sel_o(sa_WDATA_sel_o),
         .sa_BREADY_o(sa_BREADY_o)       
     );
     

@@ -67,7 +67,6 @@ module dsp_write_channel
     output  [DATA_WIDTH*SLV_AMT-1:0]        sa_WDATA_o,
     output  [SLV_AMT-1:0]                   sa_WLAST_o,
     output  [SLV_AMT-1:0]                   sa_WVALID_o,
-    output  [SLV_AMT-1:0]                   sa_WDATA_sel_o,   // Slave Arbitration selection
     // ---- Write response channel          
     output  [SLV_AMT-1:0]                   sa_BREADY_o
 );
@@ -155,7 +154,6 @@ module dsp_write_channel
         .sa_WDATA_o(sa_WDATA_o),
         .sa_WLAST_o(sa_WLAST_o),
         .sa_WVALID_o(sa_WVALID_o),
-        .sa_WDATA_sel_o(sa_WDATA_sel_o),
         .dsp_AW_WVALID_o(W_AW_WVALID),
         .dsp_AW_WREADY_o(W_AW_WREADY)
     );
