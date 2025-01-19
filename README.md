@@ -15,19 +15,25 @@ There are 2 types of interfaces:
 - AXI4 Master interface
 - AXI4 Slave interface
 
-![image.png](/doc/img/image.png)
+<div align="center">
+  <img src="/doc/img/image.png" alt="Description" style="width:300px;"/>
+</div>
 
 ### 1.1.1. AXI4 Master Interface
 
  There are 5 channels in the AXI4 Master interface: AW channel, W channel, B channel, AR channel and R channel
 
-![image.png](/doc/img/image%201.png)
+<div align="center">
+  <img src="/doc/img/image%201.png" alt="Description" style="width:350px;"/>
+</div>
 
 ### 1.1.2. AXI4 Slave Interface
 
 There are 5 channels in the AXI4 Slave interface: AW channel, W channel, B channel, AR channel and R channel
 
-![image.png](/doc/img/image%202.png)
+<div align="center">
+  <img src="/doc/img/image%202.png" alt="Description" style="width:350px;"/>
+</div>
 
 ## 1.2. Feature
 
@@ -53,7 +59,9 @@ The Interconnect provides some features:
 
 The top module is AXI4 Interconnect (RTL file: `axi_interconnect.v`)
 
-![image.png](/doc/img/image%203.png)
+<div align="center">
+  <img src="/doc/img/image%203.png" alt="Description" style="width:400px;"/>
+</div>
 
 # 2. Description
 
@@ -122,7 +130,9 @@ Some parameters that the user can configure:
     parameter SLV_ID_LSB_IDX      = 29,
     ```
     
-    ![image.png](/doc/img/image%204.png)
+<div align="center">
+  <img src="/doc/img/image%204.png" alt="Description" style="width:350px;"/>
+</div>
     
 5. **Pipeline stage** *(Update later)*
     
@@ -180,20 +190,28 @@ Due to the Interconnect supporting outstanding transactions, issues such as Out-
     1. One master writes data to three slaves corresponding to three address regions A, B, and C through the Interconnect as shown in the diagram below.
         - The slaves cause out-of-order on the B channel as shown in the timing diagram below.
             
-            ![image.png](/doc/img/image%205.png)
+          <div align="left">
+            <img src="/doc/img/image%205.png" alt="Description" style="width:500px;"/>
+          </div>
             
         - The Interconnect will reorder the B transfers as shown in the timing diagram below.
             
-            ![image.png](/doc/img/image%206.png)
+          <div align="left">
+            <img src="/doc/img/image%206.png" alt="Description" style="width:500px;"/>
+          </div>
             
     2. One master reads data from three slaves corresponding to three address regions A, B, and C through the Interconnect as shown in the diagram below.
         - The slaves cause out-of-order on the R channel as shown in the timing diagram below.
             
-            ![image.png](/doc/img/image%207.png)
+          <div align="left">
+            <img src="/doc/img/image%207.png" alt="Description" style="width:500px;"/>
+          </div>
             
         - The Interconnect will reorder the R transfers as shown in the timing diagram below.
             
-            ![image.png](/doc/img/image%208.png)
+          <div align="left">
+            <img src="/doc/img/image%208.png" alt="Description" style="width:500px;"/>
+          </div>
             
 
 # 3. Design Note
@@ -208,43 +226,61 @@ The Interconnect contains 2 main sub-modules:
 
 - Dispatcher
 - Slave arbitration
-
-![image.png](/doc/img/image%209.png)
+            
+<div align="center">
+  <img src="/doc/img/image%209.png" alt="Description" style="width:400px;"/>
+</div>
 
 ### 3.1.2. Block diagram
 
 1. **Dispatcher block**:
     
-    ![image.png](/doc/img/image%2010.png)
+   <div align="center">
+     <img src="/doc/img/image%2010.png" alt="Description" style="width:400px;"/>
+   </div>
     
-2. **Slave arbitration block**
+3. **Slave arbitration block**
     
-    ![image.png](/doc/img/image%2011.png)
+   <div align="center">
+     <img src="/doc/img/image%2011.png" alt="Description" style="width:400px;"/>
+   </div>
     
     1. For AW channel:
         
-        ![image.png](/doc/img/image%2012.png)
+        <div align="center">
+          <img src="/doc/img/image%2012.png" alt="Description" style="width:400px;"/>
+        </div>
         
-    2. For W channel
+    3. For W channel
         
-        ![image.png](/doc/img/image%2013.png)
+        <div align="center">
+          <img src="/doc/img/image%2013.png" alt="Description" style="width:400px;"/>
+        </div>
         
-    3. For B channel
+    4. For B channel
         
-        ![image.png](/doc/img/image%2014.png)
+        <div align="center">
+          <img src="/doc/img/image%2014.png" alt="Description" style="width:400px;"/>
+        </div>
         
-    4. For AR channel
+    5. For AR channel
         
-        ![image.png](/doc/img/image%2015.png)
+        <div align="center">
+          <img src="/doc/img/image%2015.png" alt="Description" style="width:400px;"/>
+        </div>
         
-    5. For R channel
+    6. For R channel
         
-        ![image.png](/doc/img/image%2016.png)
+        <div align="center">
+          <img src="/doc/img/image%2016.png" alt="Description" style="width:400px;"/>
+        </div>
         
 
 ## 3.2. RTL file structure
 
-![image.png](/doc/img/image%2017.png)
+<div align="center">
+  <img src="/doc/img/image%2017.png" alt="Description" style="width:1000px;"/>
+</div>
 
 # 4. Verification
 
@@ -254,7 +290,9 @@ The top testbench file is `axi_interconnect_tb.v`.
 
 The verification environment creates 4 AXI4 Master drivers and 2 AXI4 Slave drivers connected to the AXI4 Interconnect as shown in the following model:
 
-![image.png](/doc/img/image%2018.png)
+<div align="center">
+  <img src="/doc/img/image%2018.png" alt="Description" style="width:400px;"/>
+</div>
 
 - Each Master driver receives transaction information from the Sequencer with transactions generated **automatically** and **randomly**, each transaction includes the following information:
     - Write/Read Transaction’s ID
