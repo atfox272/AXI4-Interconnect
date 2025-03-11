@@ -82,7 +82,7 @@ module dsp_read_channel
     
     // Combinational logic
     generate
-    for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin
+    for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin : SLV_LOGIC
         assign sa_AR_outst_full_o[slv_idx] = Ax_outst_ctn == OUTSTANDING_AMT;
     end
     endgenerate

@@ -81,7 +81,7 @@ module dsp_R_channel
     // Module
     // -- RDATA FIFO
     generate
-    for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin
+    for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin : SLV_FIFO
         fifo 
             #(
             .DATA_WIDTH(DATA_INFO_W),
@@ -119,7 +119,7 @@ module dsp_R_channel
     // Combinational logic
     // -- RDATA FIFO
     generate
-        for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin
+        for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin : SLV_LOGIC
             assign data_info[slv_idx] = {sa_RID_i[TRANS_MST_ID_W*(slv_idx+1)-1-:TRANS_MST_ID_W], sa_RDATA_i[DATA_WIDTH*(slv_idx+1)-1-:DATA_WIDTH], sa_RRESP_i[TRANS_WR_RESP_W*(slv_idx+1)-1-:TRANS_WR_RESP_W], sa_RLAST_i[slv_idx]};
             assign {sa_RID_valid[slv_idx], sa_RDATA_valid[slv_idx], sa_RRESP_valid[slv_idx], sa_RLAST_valid[slv_idx]} = data_info_valid[slv_idx];
             assign fifo_rdata_wr_en[slv_idx] = sa_handshake_occur[slv_idx];
@@ -128,7 +128,7 @@ module dsp_R_channel
     endgenerate
     // -- Handshake detector
     generate
-        for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin
+        for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin : SLV_HSK
             assign sa_handshake_occur[slv_idx] = sa_RVALID_i[slv_idx] & sa_RREADY_o[slv_idx];
         end
     endgenerate
@@ -142,7 +142,7 @@ module dsp_R_channel
     assign m_RVALID_o = msb_fwd_valid;
     // -- -- Output to Slave arbitration
     generate
-        for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin
+        for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin : SLV_OUT
             assign sa_RREADY_o[slv_idx]= ~fifo_rdata_full[slv_idx];
         end
     endgenerate

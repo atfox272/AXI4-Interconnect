@@ -11,6 +11,7 @@ all: clean run_sim
 run_sim: clean
 	mkdir $(TEST_MODULE)
 	qrun -verbose -lint=default -parallel -vlog.sv -vopt.access=rw+/. -f rtl.f -f tb.f -top $(TEST_MODULE)_tb -outdir $(TEST_MODULE) -l $(TEST_MODULE)/qrun.log -designfile $(TEST_MODULE)/$(TEST_MODULE).bin -qwavedb=+memory=all+assertion+signal+cell+class+wavefile=$(TEST_MODULE)/$(TEST_MODULE).db
+
 clean:
 	$(RM_CMD)
 

@@ -1,0 +1,5 @@
+axi_interconnect.*
+sim/
+tb/ai*
+tb/mics/
+tb/.visualizer/

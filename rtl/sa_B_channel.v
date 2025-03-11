@@ -129,7 +129,7 @@ module sa_B_channel
     // -- Dispatcher Output
     assign dsp_BREADY_valid = dsp_BREADY_i[mst_id];
     generate
-        for(mst_idx = 0; mst_idx < MST_AMT; mst_idx = mst_idx + 1) begin
+        for(mst_idx = 0; mst_idx < MST_AMT; mst_idx = mst_idx + 1) begin : MST_LOGIC
             assign dsp_BVALID_o[mst_idx] = (mst_id == mst_idx) & filter_BVALID;
             assign dsp_BID_o[TRANS_MST_ID_W*(mst_idx+1)-1-:TRANS_MST_ID_W] = ssb_fwd_BID[TRANS_MST_ID_W-1:0];
             assign dsp_BRESP_o[TRANS_WR_RESP_W*(mst_idx+1)-1-:TRANS_WR_RESP_W] = ssb_fwd_BRESP;

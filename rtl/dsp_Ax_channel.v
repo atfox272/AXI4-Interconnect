@@ -58,7 +58,7 @@ module dsp_Ax_channel
     // Local parameters initialization
     localparam ADDR_INFO_W  = SLV_ID_W + TRANS_DATA_LEN_W;
     localparam Ax_INFO_W    = TRANS_MST_ID_W + ADDR_WIDTH + TRANS_BURST_W + TRANS_DATA_LEN_W + TRANS_DATA_SIZE_W;
-    
+    localparam SLV_ID_MAP_W = SLV_ID_MSB_IDX - SLV_ID_LSB_IDX + 1;
     // Internal variable declaration
     genvar slv_idx;
     
@@ -76,7 +76,7 @@ module dsp_Ax_channel
     // -- Misc
     wire    [SLV_ID_W-1:0]          slv_id;
     wire    [SLV_AMT-1:0]           slv_sel;
-    wire    [SLV_ID_W-1:0]          addr_slv_mapping;
+    wire    [SLV_ID_MAP_W-1:0]      addr_slv_mapping;
     wire    [TRANS_DATA_LEN_W-1:0]  AxLEN_valid;
     // -- Transfer counter
     wire    [TRANS_DATA_LEN_W-1:0]  transfer_ctn_nxt;
@@ -148,7 +148,7 @@ module dsp_Ax_channel
     // -- Output 
     // -- -- Output to Slave Arbitration
     generate 
-        for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin
+        for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin : SLV_LOGIC
             assign sa_AxID_o[TRANS_MST_ID_W*(slv_idx+1)-1-:TRANS_MST_ID_W]          = msb_fwd_AxID;
             assign sa_AxADDR_o[ADDR_WIDTH*(slv_idx+1)-1-:ADDR_WIDTH]                = msb_fwd_AxADDR;
             assign sa_AxBURST_o[TRANS_BURST_W*(slv_idx+1)-1-:TRANS_BURST_W]         = msb_fwd_AxBURST;

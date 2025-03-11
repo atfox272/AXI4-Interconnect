@@ -173,7 +173,7 @@ module sa_W_channel
     ////////////////////////////////////////////////////////////////////////////
     
     generate
-        for(mst_idx = 0; mst_idx < MST_AMT; mst_idx = mst_idx + 1) begin
+        for(mst_idx = 0; mst_idx < MST_AMT; mst_idx = mst_idx + 1) begin : MST_W_FIFO
             fifo 
             #(
                 .DATA_WIDTH(DATA_INFO_W),
@@ -200,7 +200,7 @@ module sa_W_channel
     assign {Ax_mst_id_valid, Ax_AxLEN_valid}    = ADDR_info_valid;
     assign fifo_order_rd_en                     = s_WLAST_o_nxt & shift_en_trans_ctn;
     generate
-        for(mst_idx = 0; mst_idx < MST_AMT; mst_idx = mst_idx + 1) begin
+        for(mst_idx = 0; mst_idx < MST_AMT; mst_idx = mst_idx + 1) begin : MST_LOGIC
             // Onehot decoder - Master ID
             assign mst_sel[mst_idx]             = Ax_mst_id_valid == mst_idx;
             // FIFO WDATA

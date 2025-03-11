@@ -128,7 +128,7 @@ module sa_Ax_channel
     
     // Module initialization
     generate
-        for(mst_idx = 0; mst_idx < MST_AMT; mst_idx = mst_idx + 1) begin
+        for(mst_idx = 0; mst_idx < MST_AMT; mst_idx = mst_idx + 1) begin : MST_FIFO
             // ADDR info FIFO
             sync_fifo #(
                 .FIFO_TYPE(2),              // Full flop
@@ -216,7 +216,7 @@ module sa_Ax_channel
     
     // Combinational logic
     generate
-    for(mst_idx = 0; mst_idx < MST_AMT; mst_idx = mst_idx + 1) begin
+    for(mst_idx = 0; mst_idx < MST_AMT; mst_idx = mst_idx + 1) begin : MST_LOGIC
         // Dispatcher interface
         assign dsp_AxREADY_o[mst_idx] = ~(dsp_dispatcher_full_i[mst_idx] | fifo_addr_info_full[mst_idx]);
         // FIFO
@@ -271,7 +271,7 @@ module sa_Ax_channel
     // Flip-flop logic
     generate
     // -- ADDR mask controller
-    for(mst_idx = 0; mst_idx < MST_AMT; mst_idx = mst_idx + 1) begin
+    for(mst_idx = 0; mst_idx < MST_AMT; mst_idx = mst_idx + 1) begin : MST_FLOP
         always @(posedge ACLK_i) begin
             if(~ARESETn_i) begin
                 msk_split_addr_sel[mst_idx] <= 0;

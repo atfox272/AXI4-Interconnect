@@ -89,7 +89,7 @@ module dsp_W_channel
     assign m_WREADY_o = msb_bwd_ready;
     // -- -- Output to Slave arbitration
     generate
-        for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin
+        for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin : SLV_LOGIC
             assign sa_WDATA_o[DATA_WIDTH*(slv_idx+1)-1-:DATA_WIDTH] = msb_fwd_WDATA;
             assign sa_WLAST_o[slv_idx] = msb_fwd_WLAST;
             assign sa_WVALID_o[slv_idx] = msb_fwd_valid & slv_sel[slv_idx];

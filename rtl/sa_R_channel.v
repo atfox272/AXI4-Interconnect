@@ -135,7 +135,7 @@ module sa_R_channel
     assign s_RREADY_o = ssb_bwd_ready;
     // -- Dispatcher Output
     generate
-        for(mst_idx = 0; mst_idx < MST_AMT; mst_idx = mst_idx + 1) begin
+        for(mst_idx = 0; mst_idx < MST_AMT; mst_idx = mst_idx + 1) begin : MST_LOGIC
             assign dsp_RVALID_o[mst_idx] = (mst_id == mst_idx) & ssb_fwd_valid;
             assign dsp_RID_o[TRANS_MST_ID_W*(mst_idx+1)-1-:TRANS_MST_ID_W] = ssb_fwd_RID[TRANS_MST_ID_W-1:0];
             assign dsp_RDATA_o[DATA_WIDTH*(mst_idx+1)-1-:DATA_WIDTH] = ssb_fwd_RDATA;

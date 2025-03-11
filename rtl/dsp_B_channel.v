@@ -100,7 +100,7 @@ module dsp_B_channel
     );
     // -- Slave Response FIFO
     generate 
-        for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin
+        for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin : SLV_FIFO
             fifo #(
                 .DATA_WIDTH(RESP_INFO_W),
                 .FIFO_DEPTH(OUTSTANDING_AMT)
@@ -141,7 +141,7 @@ module dsp_B_channel
     assign fifo_slv_ord_rd_en = m_handshake_occur;
     // -- Slave resp FIFO
     generate
-        for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin
+        for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin : SLV_LOGIC
             assign resp_info[slv_idx] = {sa_BID_i[TRANS_MST_ID_W*(slv_idx+1)-1-:TRANS_MST_ID_W], sa_BRESP_i[TRANS_WR_RESP_W*(slv_idx+1)-1-:TRANS_WR_RESP_W]};
             assign {sa_BID_valid[slv_idx], sa_BRESP_valid[slv_idx]} = resp_info_valid[slv_idx];
             assign fifo_wresp_wr_en[slv_idx] = sa_handshake_occur[slv_idx];
@@ -151,7 +151,7 @@ module dsp_B_channel
     // -- Handshake detector
     assign m_handshake_occur = msb_bwd_valid & msb_bwd_ready;
     generate
-        for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin
+        for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin : SLV_HSK
             assign sa_handshake_occur[slv_idx] = sa_BVALID_i[slv_idx] & sa_BREADY_o[slv_idx];
         end
     endgenerate
@@ -161,7 +161,7 @@ module dsp_B_channel
     assign m_BVALID_o = msb_fwd_valid;
     // -- Output to Slave arbitration
     generate
-        for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin
+        for(slv_idx = 0; slv_idx < SLV_AMT; slv_idx = slv_idx + 1) begin : SLV_OUT
             assign sa_BREADY_o[slv_idx] = ~fifo_wresp_full[slv_idx];
         end
     endgenerate

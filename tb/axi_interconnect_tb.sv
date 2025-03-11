@@ -35,6 +35,7 @@ parameter                       MST_AMT                 = 4;
 parameter                       SLV_AMT                 = 4;
 parameter                       OUTSTANDING_AMT         = 8;
 parameter [0:(MST_AMT*32)-1]    MST_WEIGHT              = {32'd5, 32'd3, 32'd1, 32'd1};
+
 int                             mst_need_req[MST_AMT]   = {50, 30, 10, 10};
 // int                             mst_need_req[MST_AMT]   = {50};
 parameter                       MST_ID_W                = $clog2(MST_AMT);

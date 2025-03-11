@@ -38,7 +38,7 @@ module splitting_4kb_masker
     assign LEN_incr = LEN_i + 1'b1;
     genvar shamt;
     generate
-        for(shamt = 0; shamt < 2**SIZE_WIDTH; shamt = shamt + 1) begin
+        for(shamt = 0; shamt < 2**SIZE_WIDTH; shamt = shamt + 1) begin : SHIFTER
             assign trans_size_sll[shamt] = LEN_incr << shamt;
             assign trans_size_rem_srl[shamt] = trans_size_rem >> shamt;
         end
