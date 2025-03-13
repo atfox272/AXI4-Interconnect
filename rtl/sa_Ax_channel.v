@@ -173,6 +173,7 @@ module sa_Ax_channel
         .clk(ACLK_i),
         .rst_n(ARESETn_i),
         .req_i(arb_req),          
+        .req_weight_i(),
         .num_grant_req_i(1'b1),
         .grant_ready_i(arb_grant_ready),  
         .grant_valid_o(arb_grant_valid)

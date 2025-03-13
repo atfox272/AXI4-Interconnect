@@ -1,5 +1,7 @@
 axi_interconnect.*
-sim/
+sim/temp.do
+sim/axi_interconnect
+sim/.visualizer
 tb/ai*
 tb/mics/
 tb/.visualizer/
