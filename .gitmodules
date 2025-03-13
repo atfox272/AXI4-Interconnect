@@ -1,0 +1,3 @@
+[submodule "rtl/common"]
+	path = rtl/common
+	url = https://github.com/atfox272/hdl-common.git
